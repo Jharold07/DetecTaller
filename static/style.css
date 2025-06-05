@@ -1,0 +1,277 @@
+/* Paleta de colores */
+:root {
+    --azul-oscuro: #00171F;
+    --azul-principal: #003459;
+    --celeste: #ADEBFF;
+    --blanco: #ffffff;
+}
+
+body {
+    margin: 0;
+    font-family: 'Segoe UI', sans-serif;
+    background-color: var(--blanco);
+    color: var(--azul-oscuro);
+}
+
+/* Header */
+header {
+    background-color: var(--blanco);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1rem 2rem;
+    border-bottom: 1px solid #ddd;
+    a {
+        text-decoration: none;
+        color: var(--azul-principal);
+    }
+}
+
+.logo {
+    font-size: 1.5rem;
+    font-weight: bold;
+    color: var(--azul-principal);
+}
+
+nav a {
+    margin-left: 2rem;
+    text-decoration: none;
+    color: var(--azul-principal);
+    font-weight: 500;
+}
+
+/* Main upload box */
+main {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    min-height: 75vh;
+}
+
+.titulo h2 {
+    text-align: center;
+    margin-bottom: 20px;
+    color: var(--azul-principal);
+  }
+
+.upload-box {
+    border: 2px dashed var(--azul-principal);
+    border-radius: 12px;
+    padding: 2rem;
+    text-align: center;
+    max-width: 400px;
+}
+
+.upload-label {
+    cursor: pointer;
+    display: block;
+    padding: 1rem;
+}
+
+.upload-icon {
+    font-size: 2.5rem;
+    color: var(--azul-principal);
+}
+
+.upload-text {
+    font-size: 1.2rem;
+    font-weight: bold;
+    margin-top: 0.5rem;
+}
+
+.description {
+    font-size: 0.95rem;
+    color: #444;
+    margin-top: 1rem;
+}
+
+
+/* boton  */
+
+.submit-btn {
+    background-color: var(--azul-principal);
+    color: var(--blanco);
+    border: none;
+    padding: 0.7rem 1.5rem;
+    border-radius: 6px;
+    cursor: pointer;
+}
+.submit {
+    margin-top: 1rem;
+    background-color: var(--azul-principal);
+    color: var(--blanco);
+    border: none;
+    padding: 0.7rem 1.5rem;
+    border-radius: 6px;
+    cursor: pointer;
+}   
+
+
+
+/* Footer */
+footer {
+    background-color: var(--azul-principal);
+    color: var(--blanco);
+    padding: 1rem 2rem;
+    display: flex;
+    justify-content: space-between;
+}
+
+/* imput nombre__en cargar imagen__________________ */
+.input-nombre {
+    display: block;
+    margin: 0 auto 20px auto;
+    padding: 12px 20px;
+    width: 80%;
+    max-width: 300px;
+    border: 1px solid #64748b;
+    border-radius: 8px;
+    outline: none;
+    transition: border-color 0.3s;
+}
+
+/* _________MODAL___________ */
+
+.modal {
+    position: fixed;
+    z-index: 1000;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    overflow: auto;
+    background-color: rgba(0,0,0,0.5);
+}
+
+.modal-content {
+    background-color: white;
+    margin: 10% auto;
+    padding: 20px;
+    border-radius: 12px;
+    width: 90%;
+    max-width: 400px;
+    text-align: center;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+}
+
+.close-btn {
+    float: right;
+    font-size: 24px;
+    cursor: pointer;
+    color: #dc2626;
+}
+
+.btn-guardar, .btn-subir {
+    margin-top: 15px;
+    padding: 10px 20px;
+    border: none;
+    background-color: var(--azul-principal);
+    color: white;
+    border-radius: 8px;
+    cursor: pointer;
+    font-weight: bold;
+}
+
+.btn-subir:hover,
+.btn-guardar:hover {
+    background-color: #134ba5; /* Un tono más claro de azul al hacer hover */
+}
+
+
+
+
+
+
+/* HISTORIAL____________________ */
+/* FILTRO */
+.filtro-form {
+    display: flex;
+    gap: 1rem;
+    margin-bottom: 10px;
+    flex-wrap: wrap;
+}
+
+.filtro-form input,
+.filtro-form select {
+    padding: 8px;
+    border-radius: 6px;
+    border: 1px solid #cbd5e1;
+}
+
+
+
+/* tabla */
+table {
+    width: 100%;
+    border-collapse: collapse;
+    background-color: #fff;
+    border-radius: 12px;
+    box-shadow: 0 10px 15px rgba(0,0,0,0.05);
+    overflow: hidden;
+}
+
+thead {
+    background-color: #ffffff;
+    color:   #003459;
+    text-align: center;
+    box-shadow: 0 10px 15px rgba(0,0,0,0.05);
+}
+
+thead th {
+    padding: 1rem;
+    font-size: 0.95rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    text-align: center;
+}
+
+tbody td {
+    padding: 1rem;
+    border-bottom: 1px solid #e2e8f0;
+    font-size: 0.95rem;
+    text-align: center;
+}
+
+tbody td a {
+    color: #000000;
+
+    a:hover {
+        color: red;
+    }
+}
+
+tbody tr:hover {
+    background-color: #f1f5f9;
+}
+
+
+/* EXPORTAR */
+.alfinal{
+    display: flex;
+    justify-content: end;
+    align-items: end;
+    margin-top: 20px;
+
+}
+.btn-exportar {
+    background-color: #003459;
+    color: white;
+    padding: 0.7rem 1.5rem;
+    border-radius: 8px;
+    border: none;
+    text-decoration: none;
+    display: inline-block;
+}
+.btn-exportar:hover {
+    background-color: #134ba5;
+}
+
+/* MENSAJE DE ERROR NO DETECTO ROSTRO*/
+.error-message {
+    color: red;
+    font-weight: bold;
+    margin-top: 10px;
+    text-align: center;
+}
+

@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>DetectEmotion</title>
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+
+<body>
+    <header>
+        <div class="logo">DetectEmotion</div>
+        <nav>
+            <span class="user-email">{{ email }}</span>
+            <a href="/">Inicio</a>
+            <a href="/historial">Historial</a>
+            <a href="/login">Cerar Sesion</a>
+        </nav>
+    </header>
+
+    <main>
+        <div class="titulo">
+            <h2>Bienvenido a DetectEmotion</h2>
+        </div>
+
+        <div class="upload-box">
+            <form action="/subir-video/" method="POST" enctype="multipart/form-data"
+                onsubmit="return validarFormulario()">
+
+                <input type="text" name="nombre" placeholder="Ingresar nombre" required class="input-nombre">
+                <input type="number" name="edad" placeholder="Edad" required min="1" max="18" class="input-nombre">
+
+                <label for="video" class="upload-label">
+                    <input type="file" name="video" id="video" accept="video/*" required hidden>
+                    <div class="upload-icon">⬆️</div>
+                    <p class="upload-text">Cargar video</p>
+                </label>
+                <p class="description">Sube el video para detectar la emocion del niño con autismo</p>
+
+                <button type="submit" class="submit">Detectar</button>
+            </form>
+            
+            {% if mensaje_error %}
+            <div class="error-message">
+                {{ mensaje_error }}
+            </div>
+            {% endif %}
+        </div>
+    </main>
+
+    <!-- MODAL DE RESULTADO PARA VIDEO -->
+    <div id="modalResultado" class="modal" style="display: none;">
+        <div class="modal-content">
+            <span class="close-btn" onclick="cerrarModal()">&times;</span>
+            <h2>Resultado de la detección</h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Emoción</th>
+                        <th>Inicio (s)</th>
+                        <th>Fin (s)</th>
+                    </tr>
+                </thead>
+                <tbody id="tablaResultados">
+                    <!-- Insertado desde JS -->
+                </tbody>
+            </table>
+            <form method="POST" action="/guardar">
+                <input type="hidden" name="nombre" value="{{ nombre }}">
+                <input type="hidden" name="edad" value="{{ edad }}">
+                <input type="hidden" name="video_nombre" value="{{ video_nombre }}">
+                <input type="hidden" name="emociones_json" id="emocionesJsonInput">
+                <button type="submit" class="btn-guardar">Guardar</button>
+            </form>
+
+            <button onclick="cerrarModal()" class="btn-subir">Cerrar</button>
+        </div>
+    </div>
+
+    <footer>
+        <span>DetectEmotion</span>
+        <span></span>
+    </footer>
+
+</body>
+
+<script>
+    function cerrarModal() {
+        document.getElementById("modalResultado").style.display = "none";
+    }
+</script>
+
+{% if emociones_detectadas is defined and emociones_detectadas %}
+
+<script>
+    window.onload = function () {
+        const resultados = JSON.parse('{{ emociones_detectadas | safe }}');
+        const tabla = document.getElementById("tablaResultados");
+
+        resultados.forEach(e => {
+            const fila = document.createElement("tr");
+            fila.innerHTML = `<td>${e.emocion}</td><td>${e.inicio}</td><td>${e.fin}</td>`;
+            tabla.appendChild(fila);
+        });
+
+        document.getElementById("modalResultado").style.display = "block";
+        document.getElementById("emocionesJsonInput").value = JSON.stringify(resultados);
+
+    };
+</script>
+{% endif %}
+
+</html>

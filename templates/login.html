@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Inicio de Sesión - DetectEmotion</title>
+    <link rel="stylesheet" href="/static/stylesLOGIN.css">
+</head>
+
+<body class="login-body">
+    <div class="login-box">
+        <h2>Inicio de Sesión</h2>
+        <img src="/static/logo.png" alt="Logo" class="login-logo">
+        <h3 class="login-title">DetectEmotion</h3>
+        {% if request.query_params.get('mensaje') %}
+        <p class="success-msg">{{ request.query_params.get('mensaje') }}</p>
+        {% endif %}
+        <form action="/login" method="POST">
+            <div class="input-group">
+                <span class="input-icon">📧</span>
+                <input type="text" name="usuario" placeholder="Email address" required>
+            </div>
+            <div class="input-group">
+                <span class="input-icon">🔒</span>
+                <input type="password" name="password" placeholder="Password" required>
+            </div>
+            <button type="submit" class="btn-ingresar">Ingresar</button>
+
+            <p style="margin-top: 15px; font-size: 0.9rem;">¿No tienes cuenta?
+                <a href="/register">Crear cuenta</a>
+            </p>
+            {% if error %}
+            <p class="error-msg">{{ error }}</p>
+            {% endif %}
+        </form>
+    </div>
+</body>
+
+</html>

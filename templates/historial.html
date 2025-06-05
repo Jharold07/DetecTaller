@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Historial de emociones</title>
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+
+<body>
+    <header>
+        <div class="logo">DetectEmotion</div>
+        <nav>
+            <span class="user-email">{{ email }}</span>
+            <a href="/">Inicio</a>
+            <a href="/historial">Historial</a>
+            <a href="/login">Cerar Sesion</a>
+        </nav>
+    </header>
+
+    <main>
+        <div class="titulo">
+            <h2>Historial de emociones identificadas</h2>
+        </div>
+
+        <div class="container">
+            <form method="GET" action="/historial" class="filtro-form" id="formFiltros">
+                <input type="text" name="nombre" placeholder="Buscar por nombre"
+                    value="{{ request.query_params.get('nombre', '') }}">
+
+                <select name="emocion" class="filtro-select">
+                    <option value="">Todas las emociones</option>
+                    <option value="happy">Feliz</option>
+                    <option value="angry">Molesto</option>
+                    <option value="sad">Triste</option>
+                    <option value="neutral">Neutral</option>
+                    <option value="fear">Miedo</option>
+                    <option value="disgust">Asco</option>
+                    <option value="surprise">Sorpresa</option>
+                </select>
+
+                <input type="date" name="fecha" value="{{ request.query_params.get('fecha', '') }}">
+                <button type="submit" class="submit-btn">Filtrar</button>
+            </form>
+
+            <table class="tabla-historial">
+                <thead>
+                    <tr>
+                        <th>N°</th>
+                        <th>Nombre</th>
+                        <th>Edad</th>
+                        <th>Fecha y hora</th>
+                        <th>Video</th>
+                        <th>Detalles</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for item in historial %}
+                    <tr>
+                        <td>{{ loop.index }}</td>
+                        <td>{{ item.nombre }}</td>
+                        <td>{{ item.edad }}</td>
+                        <td>{{ item.fecha }} {{ item.hora }}</td>
+                        <td><a href="{{ item.video }}" target="_blank">ver</a></td>
+                        <td>
+                            <button class="submit-btn btn-ver-modal" data-info='{{ item | tojson | safe }}'>
+                                Ver
+                            </button>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+
+            <!-- MODAL -->
+            <div id="modalResultado" class="modal" style="display:none;">
+                <div class="modal-content">
+                    <span class="close-btn" onclick="cerrarModal()">&times;</span>
+                    <h2>Resultado de la detección</h2>
+                    <p><strong>Nombre:</strong> <span id="modalNombre"></span> |
+                        <strong>Edad:</strong> <span id="modalEdad"></span>
+                    </p>
+                    <video id="modalVideo" controls width="100%" style="margin-bottom: 20px;">
+                        <source id="modalVideoSource" src="" type="video/mp4">
+                        Tu navegador no soporta el video.
+                    </video>
+
+
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Emoción</th>
+                                <th>Inicio (s)</th>
+                                <th>Fin (s)</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tablaResultados">
+                            <!-- Se llena con JS -->
+                        </tbody>
+                    </table>
+
+                    <button onclick="cerrarModal()" class="submit-btn">Cerrar</button>
+                </div>
+            </div>
+
+            <div class="alfinal">
+                <form method="GET" action="/exportar_pdf" id="formExportar">
+                    <input type="hidden" name="nombre" value="{{ request.query_params.get('nombre', '') }}">
+                    <input type="hidden" name="emocion" value="{{ request.query_params.get('emocion', '') }}">
+                    <input type="hidden" name="fecha" value="{{ request.query_params.get('fecha', '') }}">
+                    <button type="submit" class="btn-exportar">EXPORTAR PDF</button>
+                </form>
+            </div>
+        </div>
+    </main>
+
+    <footer>
+        <span>DetectEmotion</span>
+        <span></span>
+    </footer>
+
+
+    <script>
+        function mostrarModal(data) {
+            document.getElementById("modalNombre").innerText = data.nombre;
+            document.getElementById("modalEdad").innerText = data.edad;
+
+            // Establecer la URL del video
+            const videoTag = document.getElementById("modalVideo");
+            const videoSource = document.getElementById("modalVideoSource");
+            videoSource.src = data.video;
+            videoTag.load();
+            
+
+            const tabla = document.getElementById("tablaResultados");
+            tabla.innerHTML = "";
+
+            data.emociones.forEach(e => {
+                const fila = document.createElement("tr");
+                fila.innerHTML = `<td>${e.emocion}</td><td>${e.inicio}</td><td>${e.fin}</td>`;
+                tabla.appendChild(fila);
+            });
+
+            document.getElementById("modalResultado").style.display = "block";
+        }
+
+        function cerrarModal() {
+            document.getElementById("modalResultado").style.display = "none";
+        }
+
+        // ✅ Agregamos los eventos después de cargar todo
+        document.addEventListener("DOMContentLoaded", function () {
+            document.querySelectorAll(".btn-ver-modal").forEach(btn => {
+                btn.addEventListener("click", () => {
+                    const data = JSON.parse(btn.dataset.info);
+                    mostrarModal(data);
+                });
+            });
+        });
+    </script>
+</body>
+
+
+
+</html>

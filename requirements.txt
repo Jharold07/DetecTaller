@@ -1,0 +1,12 @@
+fastapi
+uvicorn
+jinja2
+pillow
+opencv-python
+tensorflow
+python-multipart
+reportlab
+passlib[bcrypt]
+boto3
+python-dotenv
+
