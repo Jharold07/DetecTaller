@@ -76,14 +76,21 @@
             <div id="modalResultado" class="modal" style="display:none;">
                 <div class="modal-content">
                     <span class="close-btn" onclick="cerrarModal()">&times;</span>
-                    <h2>Resultado de la detección</h2>
-                    <p><strong>Nombre:</strong> <span id="modalNombre"></span> |
-                        <strong>Edad:</strong> <span id="modalEdad"></span>
+                    <h2 style="color: #003459;">Resultado de la detección</h2>
+                    <p><strong style="color: #003459;">Nombre:</strong> <span id="modalNombre"></span> |
+                        <strong style="color: #003459;">Edad:</strong> <span id="modalEdad"></span>
                     </p>
                     <video id="modalVideo" controls width="100%" style="margin-bottom: 20px;">
                         <source id="modalVideoSource" src="" type="video/mp4">
                         Tu navegador no soporta el video.
                     </video>
+
+
+
+                    <!-- Gráfico de línea de tiempo -->
+                    <h2 style="text-align: center; color: #003459; margin-top: 10px;">Línea de tiempo de emociones</h2>
+                    <img id="graficoEmociones" src="" alt="Gráfico de emociones"
+                        style="width: 100%; max-height: 250px; object-fit: contain; margin-bottom: 20px;">
 
 
                     <table>
@@ -130,7 +137,7 @@
             const videoSource = document.getElementById("modalVideoSource");
             videoSource.src = data.video;
             videoTag.load();
-            
+
 
             const tabla = document.getElementById("tablaResultados");
             tabla.innerHTML = "";
@@ -139,6 +146,7 @@
                 const fila = document.createElement("tr");
                 fila.innerHTML = `<td>${e.emocion}</td><td>${e.inicio}</td><td>${e.fin}</td>`;
                 tabla.appendChild(fila);
+                document.getElementById("graficoEmociones").src = "data:image/png;base64," + data.grafico;
             });
 
             document.getElementById("modalResultado").style.display = "block";

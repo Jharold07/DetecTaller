@@ -16,8 +16,8 @@ async def exportar_pdf(request: Request, nombre: str = "", emocion: str = "", fe
 
     # Construir consulta dinámica
     query = '''
-        SELECT nombre, edad, fecha, hora, emocion, tiempo_procesamiento
-        FROM registros
+        SELECT nombre, edad, fecha, hora, emocion, inicio, fin
+        FROM resultados_video
         WHERE usuario_id = ?
     '''
     params = [usuario_id]
@@ -70,7 +70,7 @@ async def exportar_pdf(request: Request, nombre: str = "", emocion: str = "", fe
     c.setFont("Helvetica", 10)
     y = filtro_y - 20
     for idx, r in enumerate(registros, 1):
-        texto = f"{idx}. {r[0]} | Edad: {r[1]} | Fecha: {r[2]} {r[3]} | Emoción: {r[4]} | Tiempo: {r[5]}s"
+        texto = f"{idx}. {r[0]} | Edad: {r[1]} | Fecha: {r[2]} {r[3]} | Emoción: {r[4]} | Inicio: {r[5]}s - Fin: {r[6]}s"
         c.drawString(50, y, texto)
         y -= 18
         if y < 60:
