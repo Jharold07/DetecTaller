@@ -1,14 +1,17 @@
 from fastapi import APIRouter, Request, Form
 from fastapi.responses import RedirectResponse, HTMLResponse
 from fastapi.templating import Jinja2Templates
-import sqlite3
 from passlib.hash import bcrypt
 from starlette.responses import Response
+import mysql.connector
+import os
+from dotenv import load_dotenv
 
-templates = Jinja2Templates(directory="templates")
+load_dotenv()
+templates = Jinja2Templates(directory="app/templates")
 router = APIRouter()
 
-DB_PATH = "data/emociones.db"
+#DB_PATH = "data/emociones.db"
 
 @router.get("/login", response_class=HTMLResponse)
 async def login_get(request: Request):
@@ -19,9 +22,15 @@ async def login_get(request: Request):
 
 @router.post("/login", response_class=HTMLResponse)
 async def login_post(request: Request, usuario: str = Form(...), password: str = Form(...)):
-    conn = sqlite3.connect(DB_PATH)
+    conn = mysql.connector.connect(
+        host=os.getenv("MYSQL_HOST"),
+        port=int(os.getenv("MYSQL_PORT")),
+        user=os.getenv("MYSQL_USER"),
+        password=os.getenv("MYSQL_PASSWORD"),
+        database=os.getenv("MYSQL_DATABASE")
+    )
     cursor = conn.cursor()
-    cursor.execute("SELECT id, password FROM usuarios WHERE email = ?", (usuario,))
+    cursor.execute("SELECT id, password FROM usuarios WHERE email = %s", (usuario,))
     user = cursor.fetchone()
     conn.close()
 
@@ -42,15 +51,21 @@ async def register_post(request: Request, email: str = Form(...), password: str 
     if not email or not password:
         return templates.TemplateResponse("register.html", {"request": request, "error": "Todos los campos son obligatorios."})
 
-    conn = sqlite3.connect(DB_PATH)
+    conn = mysql.connector.connect(
+        host=os.getenv("MYSQL_HOST"),
+        port=int(os.getenv("MYSQL_PORT")),
+        user=os.getenv("MYSQL_USER"),
+        password=os.getenv("MYSQL_PASSWORD"),
+        database=os.getenv("MYSQL_DATABASE")
+    )
     cursor = conn.cursor()
-    cursor.execute("SELECT id FROM usuarios WHERE email = ?", (email,))
+    cursor.execute("SELECT id FROM usuarios WHERE email = %s", (email,))
     if cursor.fetchone():
         conn.close()
         return templates.TemplateResponse("register.html", {"request": request, "error": "El correo ya está registrado."})
 
     hash_pass = bcrypt.hash(password)
-    cursor.execute("INSERT INTO usuarios (email, password) VALUES (?, ?)", (email, hash_pass))
+    cursor.execute("INSERT INTO usuarios (email, password) VALUES (%s, %s)", (email, hash_pass))
     conn.commit()
     conn.close()
     response = RedirectResponse("/login?mensaje=Cuenta+creada+correctamente", status_code=302)

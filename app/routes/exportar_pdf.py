@@ -1,12 +1,14 @@
 from fastapi import APIRouter, Request
 from fastapi.responses import StreamingResponse, RedirectResponse
-import sqlite3
 from io import BytesIO
 from reportlab.lib.pagesizes import A4
 from reportlab.pdfgen import canvas
+import mysql.connector
+import os
+from dotenv import load_dotenv
 
 router = APIRouter()
-DB_PATH = "data/emociones.db"
+load_dotenv()
 
 @router.get("/exportar_pdf")
 async def exportar_pdf(request: Request, nombre: str = "", emocion: str = "", fecha: str = ""):
@@ -14,32 +16,49 @@ async def exportar_pdf(request: Request, nombre: str = "", emocion: str = "", fe
     if not usuario_id:
         return RedirectResponse("/login")
 
-    # Construir consulta dinámica
     query = '''
-        SELECT nombre, edad, fecha, hora, emocion, inicio, fin
+        SELECT nombre, edad, fecha, hora, video, emocion, inicio, fin
         FROM resultados_video
-        WHERE usuario_id = ?
+        WHERE usuario_id = %s
     '''
     params = [usuario_id]
 
     if nombre:
-        query += " AND nombre LIKE ?"
+        query += " AND nombre LIKE %s"
         params.append(f"%{nombre}%")
     if emocion:
-        query += " AND lower(emocion) = ?"
+        query += " AND lower(emocion) = %s"
         params.append(emocion.lower())
     if fecha:
-        query += " AND fecha = ?"
+        query += " AND fecha = %s"
         params.append(fecha)
 
     query += " ORDER BY fecha DESC, hora DESC"
 
-    # Ejecutar la consulta
-    conn = sqlite3.connect(DB_PATH)
+    conn = mysql.connector.connect(
+        host=os.getenv("MYSQL_HOST"),
+        port=int(os.getenv("MYSQL_PORT")),
+        user=os.getenv("MYSQL_USER"),
+        password=os.getenv("MYSQL_PASSWORD"),
+        database=os.getenv("MYSQL_DATABASE")
+    )
     cursor = conn.cursor()
     cursor.execute(query, params)
     registros = cursor.fetchall()
+    cursor.close()
     conn.close()
+
+    # Agrupar emociones por video/fecha/hora
+    agrupado = {}
+    for row in registros:
+        key = (row[0], row[1], row[2], row[3])  # nombre, edad, fecha, hora
+        if key not in agrupado:
+            agrupado[key] = []
+        agrupado[key].append({
+            "emocion": row[5],
+            "inicio": row[6],
+            "fin": row[7]
+        })
 
     # Crear PDF
     buffer = BytesIO()
@@ -49,7 +68,6 @@ async def exportar_pdf(request: Request, nombre: str = "", emocion: str = "", fe
     c.setFont("Helvetica-Bold", 14)
     c.drawString(50, height - 50, "Historial de Emociones Detectadas")
 
-    # Mostrar filtros aplicados
     filtro_y = height - 75
     filtros_aplicados = []
     if nombre:
@@ -66,13 +84,20 @@ async def exportar_pdf(request: Request, nombre: str = "", emocion: str = "", fe
     else:
         filtro_y -= 5
 
-    # Escribir datos
     c.setFont("Helvetica", 10)
     y = filtro_y - 20
-    for idx, r in enumerate(registros, 1):
-        texto = f"{idx}. {r[0]} | Edad: {r[1]} | Fecha: {r[2]} {r[3]} | Emoción: {r[4]} | Inicio: {r[5]}s - Fin: {r[6]}s"
-        c.drawString(50, y, texto)
-        y -= 18
+    for idx, ((nombre, edad, fecha, hora), emociones) in enumerate(agrupado.items(), 1):
+        encabezado = f"{idx}. {nombre} | Edad: {edad} | Fecha: {fecha} {hora}"
+        c.drawString(50, y, encabezado)
+        y -= 15
+
+        for e in emociones:
+            detalle = f"   - {e['emocion']} (Inicio: {e['inicio']}s - Fin: {e['fin']}s)"
+            c.drawString(60, y, detalle)
+            y -= 15
+
+        y -= 10
+
         if y < 60:
             c.showPage()
             c.setFont("Helvetica", 10)

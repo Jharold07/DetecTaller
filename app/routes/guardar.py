@@ -1,11 +1,13 @@
 from fastapi import APIRouter, Request, Form
 from fastapi.responses import RedirectResponse, HTMLResponse
-import sqlite3
 import json
 from datetime import datetime
+import mysql.connector
+import os
+from dotenv import load_dotenv
 
 router = APIRouter()
-DB_PATH = "data/emociones.db"
+load_dotenv()
 
 @router.post("/guardar")
 async def guardar(
@@ -25,14 +27,21 @@ async def guardar(
         fecha = now.strftime("%Y-%m-%d")
         hora = now.strftime("%H:%M:%S")
 
-        conn = sqlite3.connect("data/emociones.db")
+        conn = mysql.connector.connect(
+            host=os.getenv("MYSQL_HOST"),
+            port=int(os.getenv("MYSQL_PORT")),
+            user=os.getenv("MYSQL_USER"),
+            password=os.getenv("MYSQL_PASSWORD"),
+            database=os.getenv("MYSQL_DATABASE")
+        )
+
         cursor = conn.cursor()
 
         for emocion in emociones:
             cursor.execute("""
                 INSERT INTO resultados_video 
                 (nombre, edad, video, emocion, inicio, fin, usuario_id, fecha, hora)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
             """, (
                 nombre,
                 edad,
@@ -47,6 +56,7 @@ async def guardar(
 
         conn.commit()
         conn.close()
+        cursor.close()
         return RedirectResponse(url="/historial", status_code=303)
 
     except Exception as e:

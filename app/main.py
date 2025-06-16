@@ -2,21 +2,28 @@ from fastapi import FastAPI, Form, UploadFile, Request, File
 from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
-from auth import router as auth_router
-from guardar import router as guardar_router
-from historial import router as historial_router
-from procesar_video import procesar_video
-from exportar_pdf import router as pdf_router
+
+from app.routes.auth import router as auth_router
+from app.routes.guardar import router as guardar_router
+from app.routes.historial import router as historial_router
+from app.routes.exportar_pdf import router as pdf_router
+from app.routes.procesar_video import procesar_video
+
+from app.services.s3_utils import s3, BUCKET_NAME 
+
 import tensorflow as tf
 import os
 import json
 import boto3
 import time
 from datetime import datetime
-from s3_utils import s3, BUCKET_NAME 
-import shutil
 from dotenv import load_dotenv
 from botocore.exceptions import NoCredentialsError
+import shutil
+from pathlib import Path
+
+
+BASE_DIR = Path(__file__).resolve().parent.parent
 
 
 # === Cargar variables de entorno ===
@@ -29,17 +36,18 @@ s3 = boto3.client(
     region_name=os.getenv("AWS_REGION")
 )
 BUCKET_NAME = os.getenv("BUCKET_NAME")
+RUTA_VIDEOS = "videos"
 
 # === Inicializar la app ===
 app = FastAPI()
 
 # Montar archivos estáticos y templates
-app.mount("/static", StaticFiles(directory="static"), name="static")
-templates = Jinja2Templates(directory="templates")
+app.mount("/static", StaticFiles(directory="app/static"), name="static")
+templates = Jinja2Templates(directory="app/templates")
 app.templates = templates 
 
 # Modelo y etiquetas
-modelo = tf.keras.models.load_model("modelo_final.h5")
+modelo = tf.keras.models.load_model(Path(__file__).resolve().parent / "models" / "modelo_final.h5")
 emociones = ['angry', 'disgust', 'fear', 'happy', 'neutral', 'sad', 'surprise']
 
 # === Rutas ===
@@ -73,7 +81,7 @@ async def analizar_video(nombre_video: str):
 @app.post("/subir-video/", response_class=HTMLResponse)
 async def subir_video(
     request: Request,
-    video: UploadFile = Form(...),
+    video: UploadFile = File(...),
     nombre: str = Form(...),
     edad: str = Form(...)
 ):
@@ -81,6 +89,7 @@ async def subir_video(
     try:
         s3.upload_fileobj(video.file, BUCKET_NAME, video.filename)
     except Exception as e:
+        import traceback
         return HTMLResponse(content=f"❌ Error al subir video a S3: {e}", status_code=500)
 
     # === 2. Procesar video desde S3 ===
@@ -93,6 +102,19 @@ async def subir_video(
         os.remove(ruta_local)
     except Exception as e:
         return HTMLResponse(content=f"❌ Error al procesar el video: {e}", status_code=500)
+
+    # === ⚠️ Si no se detectaron rostros ===
+    if resultados is None:
+        return templates.TemplateResponse("index.html", {
+            "request": request,
+            "email": request.cookies.get("email"),
+            "mensaje_error": "⚠️ No se detectaron rostros en el video. Intenta con otro video.",
+            "emociones_detectadas": None,
+            "nombre": nombre,
+            "edad": edad,
+            "video_nombre": video.filename
+        })  
+
 
     # === 3. Renderizar resultados ===
     return templates.TemplateResponse("index.html", {

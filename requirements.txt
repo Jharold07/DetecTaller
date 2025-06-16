@@ -10,3 +10,4 @@ passlib[bcrypt]
 boto3
 python-dotenv
 matplotlib
+mysql-connector-python

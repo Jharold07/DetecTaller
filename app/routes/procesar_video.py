@@ -71,6 +71,6 @@ def procesar_video(ruta_video, modelo, emociones):
     cap.release()
 
     if not rostro_detectado:
-        return None  # ⚠️ No se detectó ningún rostro en todo el video
+        return None  # No se detectó ningún rostro en todo el video
 
     return resultados

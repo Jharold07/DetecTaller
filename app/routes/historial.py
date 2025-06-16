@@ -1,7 +1,6 @@
 from fastapi import APIRouter, Request
-from fastapi.templating import Jinja2Templates
 from fastapi.responses import HTMLResponse
-import sqlite3
+import mysql.connector
 import boto3
 import os
 import matplotlib.pyplot as plt
@@ -33,32 +32,42 @@ async def ver_historial(request: Request):
     emocion_filtro = request.query_params.get("emocion", "").strip()
     fecha_filtro = request.query_params.get("fecha", "").strip()
 
-    conn = sqlite3.connect("data/emociones.db")
+    conn = mysql.connector.connect(
+        host=os.getenv("MYSQL_HOST"),
+        port=int(os.getenv("MYSQL_PORT")),
+        user=os.getenv("MYSQL_USER"),
+        password=os.getenv("MYSQL_PASSWORD"),
+        database=os.getenv("MYSQL_DATABASE")
+    )
+
     cursor = conn.cursor()
 
     query = """
         SELECT video, fecha, hora, nombre, edad, emocion, inicio, fin
         FROM resultados_video
-        WHERE usuario_id = ?
+        WHERE usuario_id = %s
     """
+
     params = [usuario_id]
 
     if nombre_filtro:
-        query += " AND nombre LIKE ?"
+        query += " AND nombre LIKE %s"
         params.append(f"%{nombre_filtro}%")
 
     if emocion_filtro:
-        query += " AND emocion = ?"
+        query += " AND video IN (SELECT video FROM resultados_video WHERE emocion = %s AND usuario_id = %s)"
         params.append(emocion_filtro)
+        params.append(usuario_id)
 
     if fecha_filtro:
-        query += " AND fecha = ?"
+        query += " AND fecha = %s"
         params.append(fecha_filtro)
 
     query += " ORDER BY fecha DESC, hora DESC"
 
     cursor.execute(query, params)
     rows = cursor.fetchall()
+    cursor.close()
     conn.close()
 
     # Agrupar resultados por video, fecha, hora
@@ -74,8 +83,8 @@ async def ver_historial(request: Request):
                     Params={'Bucket': BUCKET_NAME, 'Key': row[0]},
                     ExpiresIn=3600  # URL válida por 1 hora
                 ),
-                "fecha": row[1],
-                "hora": row[2],
+                "fecha": str(row[1]),
+                "hora": str(row[2]),
                 "nombre": row[3],
                 "edad": row[4],
                 "emociones": []

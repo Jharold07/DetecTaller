@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <title>DetectEmotion</title>
-    <link rel="stylesheet" href="/static/style.css">
+    <link rel="stylesheet" href="/static/style.css"
 </head>
 
 <body>
@@ -14,7 +14,7 @@
             <span class="user-email">{{ email }}</span>
             <a href="/">Inicio</a>
             <a href="/historial">Historial</a>
-            <a href="/login">Cerar Sesion</a>
+            <a href="/login">Cerar Sesión</a>
         </nav>
     </header>
 
@@ -27,8 +27,8 @@
             <form action="/subir-video/" method="POST" enctype="multipart/form-data"
                 onsubmit="return validarFormulario()">
 
-                <input type="text" name="nombre" placeholder="Ingresar nombre" required class="input-nombre">
-                <input type="number" name="edad" placeholder="Edad" required min="1" max="18" class="input-nombre">
+                <input type="text" name="nombre" placeholder="Ingresar nombre / unicamente letras" required class="input-nombre">
+                <input type="number" name="edad" placeholder="Edad ejemplo: 1 - 18" required min="1" max="18" class="input-nombre">
 
                 <label for="video" class="upload-label">
                     <input type="file" name="video" id="video" accept="video/*" required hidden>
@@ -38,10 +38,14 @@
                 <p class="description">Sube el video para detectar la emocion del niño con autismo</p>
 
                 <button type="submit" class="submit">Detectar</button>
+                <div id="mensajeDetectando" class="mensaje-detectando" style="display: none;">
+                    Detectando emociones...
+                </div>
+                
             </form>
             
             {% if mensaje_error %}
-            <div class="error-message">
+            <div id="mensajeError" class="error-message">
                 {{ mensaje_error }}
             </div>
             {% endif %}
@@ -90,8 +94,57 @@
     }
 </script>
 
-{% if emociones_detectadas is defined and emociones_detectadas %}
+<!-- SIEMPRE SE CARGA -->
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        const nombreInput = document.querySelector('input[name="nombre"]');
 
+        if (nombreInput) {
+            nombreInput.addEventListener("keypress", function (e) {
+                const char = String.fromCharCode(e.keyCode || e.which);
+                if (!/^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]$/.test(char)) {
+                    e.preventDefault();
+                }
+            });
+        }
+    });
+
+    function validarFormulario() {
+        const nombreInput = document.querySelector('input[name="nombre"]');
+        const nombre = nombreInput.value.trim();
+        const mensaje = document.getElementById("mensajeDetectando");
+
+        const soloLetras = /^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]{3,30}$/;
+
+        if (!soloLetras.test(nombre)) {
+            alert("⚠️ El nombre debe tener entre 3 y 30 letras, sin números ni símbolos.");
+            nombreInput.value = "";
+            nombreInput.focus();
+            mensaje.style.display = "none";
+            return false;
+        }
+
+        mensaje.style.display = "block";
+        return true;
+    }
+</script>
+
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        const errorBox = document.getElementById("mensajeError");
+
+        if (errorBox) {
+            // Desaparece después de 5 segundos
+            setTimeout(() => {
+                errorBox.style.display = "none";
+                errorBox.setAttribute("data-visible", "false");
+            }, 5000);
+        }
+    });
+</script>
+
+
+{% if emociones_detectadas is defined and emociones_detectadas %}
 <script>
     window.onload = function () {
         const resultados = JSON.parse('{{ emociones_detectadas | safe }}');
@@ -105,9 +158,7 @@
 
         document.getElementById("modalResultado").style.display = "block";
         document.getElementById("emocionesJsonInput").value = JSON.stringify(resultados);
-
     };
 </script>
 {% endif %}
-
 </html>

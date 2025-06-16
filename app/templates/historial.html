@@ -14,7 +14,7 @@
             <span class="user-email">{{ email }}</span>
             <a href="/">Inicio</a>
             <a href="/historial">Historial</a>
-            <a href="/login">Cerar Sesion</a>
+            <a href="/login">Cerar Sesión</a>
         </nav>
     </header>
 
@@ -106,6 +106,8 @@
                         </tbody>
                     </table>
 
+                   
+
                     <button onclick="cerrarModal()" class="submit-btn">Cerrar</button>
                 </div>
             </div>
@@ -126,6 +128,9 @@
         <span></span>
     </footer>
 
+    {% if not historial %}
+    <p class="no-result">No hay resultados para los filtros aplicados.</p>
+    {% endif %}
 
     <script>
         function mostrarModal(data) {
