@@ -27,6 +27,7 @@ async def ver_historial(request: Request):
     if not usuario_id:
         return {"error": "No logueado"}
 
+    email = request.cookies.get("email")
     # === Obtener filtros ===
     nombre_filtro = request.query_params.get("nombre", "").strip()
     emocion_filtro = request.query_params.get("emocion", "").strip()
@@ -103,7 +104,8 @@ async def ver_historial(request: Request):
 
     return request.app.templates.TemplateResponse("historial.html", {
         "request": request,
-        "historial": historial
+        "historial": historial,
+        "email": email
     })
 
 def generar_grafico_tiempo(emociones):

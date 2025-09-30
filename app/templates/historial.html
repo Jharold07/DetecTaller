@@ -71,6 +71,9 @@
                     {% endfor %}
                 </tbody>
             </table>
+            {% if not historial %}
+            <p class="no-result">No hay resultados para los filtros aplicados.</p>
+            {% endif %}
 
             <!-- MODAL -->
             <div id="modalResultado" class="modal" style="display:none;">
@@ -106,7 +109,6 @@
                         </tbody>
                     </table>
 
-                   
 
                     <button onclick="cerrarModal()" class="submit-btn">Cerrar</button>
                 </div>
@@ -128,9 +130,7 @@
         <span></span>
     </footer>
 
-    {% if not historial %}
-    <p class="no-result">No hay resultados para los filtros aplicados.</p>
-    {% endif %}
+
 
     <script>
         function mostrarModal(data) {
