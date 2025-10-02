@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <title>DetectEmotion</title>
-    <link rel="stylesheet" href="/static/style.css"
+    <link rel="stylesheet" href="/static/style.css">
 </head>
 
 <body>
@@ -24,26 +24,27 @@
         </div>
 
         <div class="upload-box">
-            <form action="/subir-video/" method="POST" enctype="multipart/form-data"
-                onsubmit="return validarFormulario()">
+            <form action="/subir" method="POST" enctype="multipart/form-data" onsubmit="return validarFormulario()">
 
-                <input type="text" name="nombre" placeholder="Ingresar nombre / unicamente letras" required class="input-nombre">
-                <input type="number" name="edad" placeholder="Edad ejemplo: 1 - 18" required min="1" max="18" class="input-nombre">
+                <input type="text" name="nombre" placeholder="Ingresar nombre / unicamente letras" required
+                    class="input-nombre">
+                <input type="number" name="edad" placeholder="Edad ejemplo: 1 - 18" required min="1" max="18"
+                    class="input-nombre">
 
                 <label for="video" class="upload-label">
-                    <input type="file" name="video" id="video" accept="video/*" required hidden>
+                    <input type="file" name="archivo" id="archivo" accept="video/*,image/*" required />
                     <div class="upload-icon">⬆️</div>
-                    <p class="upload-text">Cargar video</p>
+                    <p class="upload-text" id="uploadText">Cargar archivo</p>
                 </label>
-                <p class="description">Sube el video para detectar la emocion del niño con autismo</p>
+                <p class="description" id="descText">Sube el video o imagen para detectar la emoción</p>
 
                 <button type="submit" class="submit">Detectar</button>
                 <div id="mensajeDetectando" class="mensaje-detectando" style="display: none;">
                     Detectando emociones...
                 </div>
-                
+
             </form>
-            
+
             {% if mensaje_error %}
             <div id="mensajeError" class="error-message">
                 {{ mensaje_error }}
@@ -81,12 +82,100 @@
         </div>
     </div>
 
+    <!-- MODAL DE RESULTADO PARA IMAGEN -->
+    <div id="modalResultadoImagen" class="modal" style="display:none;">
+        <div class="modal-content">
+            <span class="close-btn" onclick="cerrarModalImagen()">&times;</span>
+            <h2>Resultado de la detección</h2>
+
+            <div style="display:flex; gap:16px; align-items:center; flex-wrap:wrap;">
+                <center> <img id="imagenMostrada" src="" alt="Imagen detectada" style="max-width:320px; border-radius:8px;"></center>
+               
+                
+                    <div>
+                        <p><b>Nombre:</b> <span id="imgNombreTxt"></span></p>
+                        <p><b>Edad:</b> <span id="imgEdadTxt"></span></p>
+                        <p><b>Emoción detectada:</b> <span id="imgEmocionTxt"></span></p>
+                        <p><b>Confianza:</b> <span id="imgConfianzaTxt"></span>%</p>
+                        <p><b>Tiempo de análisis:</b> <span id="imgTiempoTxt"></span> s</p>
+
+                        <!-- apunta al endpoint guardarimagen -->
+                        <form method="POST" action="/guardar-imagen">
+                            <input type="hidden" name="nombre" id="imgNombre">
+                            <input type="hidden" name="edad" id="imgEdad">
+                            <input type="hidden" name="imagen_path" id="imgPath">
+                            <input type="hidden" name="emocion" id="imgEmocion">
+                            <input type="hidden" name="confianza" id="imgConfianza">
+                            <input type="hidden" name="tiempo_procesamiento" id="imgTiempo">
+                            <button type="submit" class="btn-guardar">Guardar</button>
+                        </form>
+                    </div>
+            </div>
+
+            <button onclick="cerrarModalImagen()" class="btn-subir">Cerrar</button>
+        </div>
+    </div>
+
+    {% if resultado_imagen_json %}
+    <script>
+        function abrirModalImagen(r) {
+            document.getElementById('imagenMostrada').src = r.imagen_url;
+            document.getElementById('imgNombreTxt').textContent = r.nombre;
+            document.getElementById('imgEdadTxt').textContent = r.edad;
+            document.getElementById('imgEmocionTxt').textContent = r.emocion;
+            document.getElementById('imgConfianzaTxt').textContent = r.confianza;
+            document.getElementById('imgTiempoTxt').textContent = r.tiempo;
+
+            // Hidden fields para guardar
+            document.getElementById('imgNombre').value = r.nombre;
+            document.getElementById('imgEdad').value = r.edad;
+            document.getElementById('imgPath').value = r.imagen_guardada;
+            document.getElementById('imgEmocion').value = r.emocion;
+            document.getElementById('imgConfianza').value = r.confianza;
+            document.getElementById('imgTiempo').value = r.tiempo;
+
+            document.getElementById('modalResultadoImagen').style.display = 'block';
+        }
+
+        function cerrarModalImagen() {
+            document.getElementById('modalResultadoImagen').style.display = 'none';
+        }
+
+        // Render al cargar
+        window.addEventListener('load', () => {
+            const r = JSON.parse('{{ resultado_imagen_json | safe}}');
+            abrirModalImagen(r);
+        });
+    </script>
+    {% endif %}
+
     <footer>
         <span>DetectEmotion</span>
         <span></span>
     </footer>
 
 </body>
+
+<script>
+    const fileInput = document.getElementById('archivo');
+    const uploadText = document.getElementById('uploadText');
+    const descText = document.getElementById('descText');
+
+    fileInput.addEventListener('change', () => {
+        const f = fileInput.files[0];
+        if (!f) return;
+        if (f.type.startsWith('image/')) {
+            uploadText.textContent = 'Cargar imagen';
+            descText.textContent = 'Sube una imagen con el rostro en primer plano';
+        } else if (f.type.startsWith('video/')) {
+            uploadText.textContent = 'Cargar video';
+            descText.textContent = 'Sube un video para detectar la emoción a lo largo del tiempo';
+        } else {
+            uploadText.textContent = 'Archivo no soportado';
+            descText.textContent = 'Selecciona una imagen o un video';
+        }
+    });
+</script>
 
 <script>
     function cerrarModal() {
@@ -161,4 +250,5 @@
     };
 </script>
 {% endif %}
+
 </html>

@@ -164,6 +164,10 @@ footer {
     box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
 }
 
+.modelcontendimagen{
+    text-align: center;
+}
+
 .close-btn {
     float: right;
     font-size: 24px;

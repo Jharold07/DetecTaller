@@ -3,6 +3,7 @@ from fastapi.responses import HTMLResponse
 import mysql.connector
 import boto3
 import os
+import matplotlib
 import matplotlib.pyplot as plt
 import io
 import base64
@@ -10,8 +11,9 @@ from dotenv import load_dotenv
 
 
 load_dotenv()
-
 router = APIRouter()
+
+matplotlib.use("Agg")
 
 s3 = boto3.client(
     's3',
@@ -44,11 +46,20 @@ async def ver_historial(request: Request):
     cursor = conn.cursor()
 
     query = """
-        SELECT video, fecha, hora, nombre, edad, emocion, inicio, fin
-        FROM resultados_video
+        SELECT
+            id, usuario_id, nombre, edad,
+            archivo,          -- S3 key (video o imagen)
+            emocion,
+            confianza,        -- NULL en video
+            tiempo_procesamiento, -- NULL en video
+            inicio,           -- NULL en imagen
+            fin,              -- NULL en imagen
+            fecha,
+            hora,
+            tipo              -- 'video' | 'imagen'
+        FROM vw_historial
         WHERE usuario_id = %s
     """
-
     params = [usuario_id]
 
     if nombre_filtro:
@@ -56,9 +67,8 @@ async def ver_historial(request: Request):
         params.append(f"%{nombre_filtro}%")
 
     if emocion_filtro:
-        query += " AND video IN (SELECT video FROM resultados_video WHERE emocion = %s AND usuario_id = %s)"
+        query += " AND emocion %s"
         params.append(emocion_filtro)
-        params.append(usuario_id)
 
     if fecha_filtro:
         query += " AND fecha = %s"
@@ -71,36 +81,59 @@ async def ver_historial(request: Request):
     cursor.close()
     conn.close()
 
-    # Agrupar resultados por video, fecha, hora
-    historial = []
-    video_dict = {}
+    videos_map = {}
+    imagenes = []
 
-    for row in rows:
-        key = (row[0], row[1], row[2])  # video, fecha, hora
-        if key not in video_dict:
-            video_dict[key] = {
-                "video": s3.generate_presigned_url(
-                    'get_object',
-                    Params={'Bucket': BUCKET_NAME, 'Key': row[0]},
-                    ExpiresIn=3600  # URL válida por 1 hora
-                ),
-                "fecha": str(row[1]),
-                "hora": str(row[2]),
-                "nombre": row[3],
-                "edad": row[4],
-                "emociones": []
-            }
-        video_dict[key]["emociones"].append({
-            "emocion": row[5],
-            "inicio": row[6],
-            "fin": row[7]
-        })
+    for (
+        _id, _uid, nombre, edad, archivo, emocion, confianza,
+        tiempo_proc, inicio, fin, fecha, hora, tipo
+    ) in rows:
+        
+        # URL firma para el archivo S3
+        url = s3.generate_presigned_url(
+            'get_object',
+            Params={'Bucket': BUCKET_NAME, 'Key': archivo},
+            ExpiresIn=3600
+        )
 
-    historial = list(video_dict.values())
+        if tipo == 'video':
+            key = (archivo, str(fecha), str(hora))
+            if key not in videos_map:
+                videos_map[key] = {
+                    "tipo": "video",
+                    "archivo": url,
+                    "fecha": str(fecha),
+                    "hora": str(hora),
+                    "nombre": nombre,
+                    "edad": edad,
+                    "emociones": []          
+                } 
+
+            if inicio is not None and fin is not None:
+                videos_map[key]["emociones"].append({
+                    "emocion": emocion,
+                    "inicio": inicio,
+                    "fin": fin
+                })
+        else:  
+            imagenes.append({
+                "tipo": "imagen",
+                "archivo": url,
+                "fecha": str(fecha),
+                "hora": str(hora),
+                "nombre": nombre,
+                "edad": edad,
+                "emocion": emocion,
+                "confianza": float(confianza) if confianza is not None else None,
+                "tiempo_procesamiento": float(tiempo_proc) if tiempo_proc is not None else None
+            })
+
+    historial = list(videos_map.values()) + imagenes 
 
     # Generar gráfico para cada video
-    for v in historial:
-        v["grafico"] = generar_grafico_tiempo(v["emociones"])
+    for item in historial:
+        if item["tipo"] == "video" and item["emociones"]:
+            item["grafico"] = generar_grafico_tiempo(item["emociones"])
 
     return request.app.templates.TemplateResponse("historial.html", {
         "request": request,
@@ -110,8 +143,6 @@ async def ver_historial(request: Request):
 
 def generar_grafico_tiempo(emociones):
     fig, ax = plt.subplots(figsize=(8, 2))
-    
-    # Colores fijos por emoción
     colores_emociones = {
         "happy": "#32CD32",     # Verde lima
         "sad": "#1E90FF",       # Azul
@@ -148,9 +179,8 @@ def generar_grafico_tiempo(emociones):
     ax.legend(*zip(*unique), loc='upper center', bbox_to_anchor=(0.5, 1.35),
               ncol=4, fontsize='small', frameon=False)
 
-    plt.tight_layout()
-
     buf = io.BytesIO()
+    plt.tight_layout()
     plt.savefig(buf, format="png", bbox_inches='tight', dpi=100)
     buf.seek(0)
     encoded = base64.b64encode(buf.read()).decode("utf-8")

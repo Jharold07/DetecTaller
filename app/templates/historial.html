@@ -50,7 +50,7 @@
                         <th>Nombre</th>
                         <th>Edad</th>
                         <th>Fecha y hora</th>
-                        <th>Video</th>
+                        <th>Archivo</th>
                         <th>Detalles</th>
                     </tr>
                 </thead>
@@ -61,7 +61,13 @@
                         <td>{{ item.nombre }}</td>
                         <td>{{ item.edad }}</td>
                         <td>{{ item.fecha }} {{ item.hora }}</td>
-                        <td><a href="{{ item.video }}" target="_blank">ver</a></td>
+                        <td>
+                            {% if item.tipo == 'video' %}
+                            <a href="{{ item.archivo }}" target="_blank">ver video</a>
+                            {% elif item.tipo == 'imagen' %}
+                            <a href="{{ item.archivo }}" target="_blank">ver imagen</a>
+                            {% endif %}
+                        </td>
                         <td>
                             <button class="submit-btn btn-ver-modal" data-info='{{ item | tojson | safe }}'>
                                 Ver
@@ -87,28 +93,38 @@
                         <source id="modalVideoSource" src="" type="video/mp4">
                         Tu navegador no soporta el video.
                     </video>
+                    <!-- Imagen -->
+                    <div class="modelcontendimagen">
+                        <img id="modalImagen" src="" style="max-width:100%;margin-bottom:20px;display:none;" />
+                    </div>
 
+                    <!-- Imagen -->
 
 
                     <!-- Gráfico de línea de tiempo -->
-                    <h2 style="text-align: center; color: #003459; margin-top: 10px;">Línea de tiempo de emociones</h2>
-                    <img id="graficoEmociones" src="" alt="Gráfico de emociones"
-                        style="width: 100%; max-height: 250px; object-fit: contain; margin-bottom: 20px;">
+                    <div id="videoExtra" style="display: none;">
+                        <h2 style="text-align: center; color: #003459; margin-top: 10px;">Línea de tiempo de emociones
+                        </h2>
+                        <img id="graficoEmociones" src="" alt="Gráfico de emociones"
+                            style="width: 100%; max-height: 250px; object-fit: contain; margin-bottom: 20px;">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Emoción</th>
+                                    <th>Inicio (s)</th>
+                                    <th>Fin (s)</th>
+                                </tr>
+                            </thead>
+                            <tbody id="tablaResultados"></tbody>
+                        </table>
+                    </div>
 
-
-                    <table>
-                        <thead>
-                            <tr>
-                                <th>Emoción</th>
-                                <th>Inicio (s)</th>
-                                <th>Fin (s)</th>
-                            </tr>
-                        </thead>
-                        <tbody id="tablaResultados">
-                            <!-- Se llena con JS -->
-                        </tbody>
-                    </table>
-
+                    <!-- Datos extra solo para imagen -->
+                    <div id="imagenExtra" style="display:none;">
+                        <p><strong>Emoción detectada:</strong> <span id="imgEmocion"></span></p>
+                        <p><strong>Confianza:</strong> <span id="imgConfianza"></span></p>
+                        <p><strong>Tiempo de análisis:</strong> <span id="imgTiempo"></span> segundos</p>
+                    </div>
 
                     <button onclick="cerrarModal()" class="submit-btn">Cerrar</button>
                 </div>
@@ -119,7 +135,7 @@
                     <input type="hidden" name="nombre" value="{{ request.query_params.get('nombre', '') }}">
                     <input type="hidden" name="emocion" value="{{ request.query_params.get('emocion', '') }}">
                     <input type="hidden" name="fecha" value="{{ request.query_params.get('fecha', '') }}">
-                    <button type="submit" class="btn-exportar">EXPORTAR PDF</button>
+                    <button type="submit" class="btn-exportar">Exportar PDF</button>
                 </form>
             </div>
         </div>
@@ -140,19 +156,46 @@
             // Establecer la URL del video
             const videoTag = document.getElementById("modalVideo");
             const videoSource = document.getElementById("modalVideoSource");
-            videoSource.src = data.video;
-            videoTag.load();
-
-
+            const imgTag = document.getElementById("modalImagen");
+            const grafico = document.getElementById("graficoEmociones");
             const tabla = document.getElementById("tablaResultados");
+            const videoExtra = document.getElementById("videoExtra");
+            const imagenExtra = document.getElementById("imagenExtra");
+
+            videoTag.style.display = "none";
+            imgTag.style.display = "none";
+            videoExtra.style.display = "none";
+            imagenExtra.style.display = "none";
             tabla.innerHTML = "";
 
-            data.emociones.forEach(e => {
-                const fila = document.createElement("tr");
-                fila.innerHTML = `<td>${e.emocion}</td><td>${e.inicio}</td><td>${e.fin}</td>`;
-                tabla.appendChild(fila);
-                document.getElementById("graficoEmociones").src = "data:image/png;base64," + data.grafico;
-            });
+            if (data.tipo === "video") {
+                videoTag.style.display = "block";
+                videoExtra.style.display = "block";
+                videoSource.src = data.archivo;
+                videoTag.load();
+
+                if (Array.isArray(data.emociones)) {
+                    data.emociones.forEach(e => {
+                        const fila = document.createElement("tr");
+                        fila.innerHTML = `<td>${e.emocion}</td><td>${e.inicio}</td><td>${e.fin}</td>`;
+                        tabla.appendChild(fila);
+                    });
+                }
+                if (data.grafico) {
+                    grafico.src = "data:image/png;base64," + data.grafico;
+                }
+
+            } else if (data.tipo === "imagen") {
+                imgTag.style.display = "block";
+                imagenExtra.style.display = "block";
+                imgTag.src = data.archivo;
+
+                document.getElementById("imgEmocion").innerText = data.emocion ?? '-';
+                const conf = (data.confianza != null) ? (Number(data.confianza).toFixed(2) + "%") : "-";
+                document.getElementById("imgConfianza").innerText = conf;
+                const t = (data.tiempo_procesamiento != null) ? Number(data.tiempo_procesamiento).toFixed(2) : "-";
+                document.getElementById("imgTiempo").innerText = t;
+            }
 
             document.getElementById("modalResultado").style.display = "block";
         }
@@ -161,7 +204,6 @@
             document.getElementById("modalResultado").style.display = "none";
         }
 
-        // ✅ Agregamos los eventos después de cargar todo
         document.addEventListener("DOMContentLoaded", function () {
             document.querySelectorAll(".btn-ver-modal").forEach(btn => {
                 btn.addEventListener("click", () => {
@@ -170,9 +212,7 @@
                 });
             });
         });
+
     </script>
 </body>
-
-
-
 </html>
