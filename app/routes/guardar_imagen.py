@@ -21,8 +21,8 @@ async def guardar_imagen(
     edad: str = Form(...),
     imagen_path: str = Form(...),          # p.ej. 'fotos/juan_20250929.jpg'
     emocion: str = Form(...),
-    confianza: str = Form(...),            # viene como "20.89" (sin %). Aun así normalizamos.
-    tiempo_procesamiento: str = Form(...), # "0.72"
+    confianza: str = Form(...),            
+    tiempo_procesamiento: str = Form(...), 
 ):
     usuario_id = request.cookies.get("usuario_id")
     if not usuario_id:
@@ -60,7 +60,6 @@ async def guardar_imagen(
         cur.close()
         conn.close()
 
-        # Regresa al historial
         return RedirectResponse("/historial", status_code=303)
 
     except Exception as e:

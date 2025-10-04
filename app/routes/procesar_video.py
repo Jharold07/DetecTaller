@@ -19,7 +19,6 @@ def procesar_video(ruta_video, modelo, emociones):
 
         frame_id += 1
 
-        # Procesar un frame por segundo
         if frame_id % int(fps) != 0:
             continue
 
@@ -27,12 +26,11 @@ def procesar_video(ruta_video, modelo, emociones):
         faces = face_cascade.detectMultiScale(gray, scaleFactor=1.1, minNeighbors=5)
 
         if len(faces) == 0:
-            continue  # No hay rostro, pasar al siguiente frame
+            continue  
         else:
             rostro_detectado = True
 
         try:
-            # Redimensionar para el modelo
             img = cv2.resize(frame, (224, 224))
             img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
             img_array = np.array(img) / 255.0
@@ -60,7 +58,6 @@ def procesar_video(ruta_video, modelo, emociones):
         except Exception as e:
             continue
 
-    # Guardar la última emoción
     if emocion_anterior is not None:
         resultados.append({
             "emocion": emocion_anterior,
@@ -71,6 +68,6 @@ def procesar_video(ruta_video, modelo, emociones):
     cap.release()
 
     if not rostro_detectado:
-        return None  # No se detectó ningún rostro en todo el video
+        return None  
 
     return resultados

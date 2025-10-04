@@ -30,7 +30,7 @@ async def ver_historial(request: Request):
         return {"error": "No logueado"}
 
     email = request.cookies.get("email")
-    # === Obtener filtros ===
+
     nombre_filtro = request.query_params.get("nombre", "").strip()
     emocion_filtro = request.query_params.get("emocion", "").strip()
     fecha_filtro = request.query_params.get("fecha", "").strip()
@@ -89,7 +89,7 @@ async def ver_historial(request: Request):
         tiempo_proc, inicio, fin, fecha, hora, tipo
     ) in rows:
         
-        # URL firma para el archivo S3
+        # URL firma S3
         url = s3.generate_presigned_url(
             'get_object',
             Params={'Bucket': BUCKET_NAME, 'Key': archivo},
@@ -130,7 +130,7 @@ async def ver_historial(request: Request):
 
     historial = list(videos_map.values()) + imagenes 
 
-    # Generar gráfico para cada video
+    # Generar gráfico
     for item in historial:
         if item["tipo"] == "video" and item["emociones"]:
             item["grafico"] = generar_grafico_tiempo(item["emociones"])

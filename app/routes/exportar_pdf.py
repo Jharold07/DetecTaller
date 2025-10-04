@@ -48,7 +48,6 @@ async def exportar_pdf(request: Request, nombre: str = "", emocion: str = "", fe
     cursor.close()
     conn.close()
 
-    # Agrupar emociones por video/fecha/hora
     agrupado = {}
     for row in registros:
         key = (row[0], row[1], row[2], row[3])  # nombre, edad, fecha, hora
@@ -60,13 +59,12 @@ async def exportar_pdf(request: Request, nombre: str = "", emocion: str = "", fe
             "fin": row[7]
         })
 
-    # Crear PDF
     buffer = BytesIO()
     c = canvas.Canvas(buffer, pagesize=A4)
     width, height = A4
 
     c.setFont("Helvetica-Bold", 14)
-    c.drawString(50, height - 50, "Historial de Emociones Detectadas")
+    c.drawString(50, height - 50, "Reporte de historial de Emociones ")
 
     filtro_y = height - 75
     filtros_aplicados = []
@@ -105,6 +103,8 @@ async def exportar_pdf(request: Request, nombre: str = "", emocion: str = "", fe
 
     c.save()
     buffer.seek(0)
+
+    c.drawString(50, height - 50, "Generado por DetectaEmocion")
 
     return StreamingResponse(buffer, media_type="application/pdf", headers={
         "Content-Disposition": "attachment; filename=historial_emociones.pdf"
