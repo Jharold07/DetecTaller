@@ -30,7 +30,6 @@ async def ver_historial(request: Request):
         return {"error": "No logueado"}
 
     email = request.cookies.get("email")
-
     nombre_filtro = request.query_params.get("nombre", "").strip()
     emocion_filtro = request.query_params.get("emocion", "").strip()
     fecha_filtro = request.query_params.get("fecha", "").strip()
@@ -42,7 +41,6 @@ async def ver_historial(request: Request):
         password=os.getenv("MYSQL_PASSWORD"),
         database=os.getenv("MYSQL_DATABASE")
     )
-
     cursor = conn.cursor()
 
     query = """
@@ -89,10 +87,16 @@ async def ver_historial(request: Request):
         tiempo_proc, inicio, fin, fecha, hora, tipo
     ) in rows:
         
+        if tipo == 'video':
+            s3_key = f"videos/{archivo}" if not archivo.startswith("videos/") else archivo
+        else:
+            s3_key = f"fotos/{archivo}" if not archivo.startswith("fotos/") else archivo
+
+        
         # URL firma S3
         url = s3.generate_presigned_url(
             'get_object',
-            Params={'Bucket': BUCKET_NAME, 'Key': archivo},
+            Params={'Bucket': BUCKET_NAME, 'Key': s3_key},
             ExpiresIn=3600
         )
 

@@ -34,8 +34,10 @@ async def guardar(
             password=os.getenv("MYSQL_PASSWORD"),
             database=os.getenv("MYSQL_DATABASE")
         )
-
         cursor = conn.cursor()
+
+        if video_nombre.startswith("http"):
+            video_nombre = video_nombre.split("/")[-1]
 
         for emocion in emociones:
             cursor.execute("""
@@ -57,6 +59,7 @@ async def guardar(
         conn.commit()
         conn.close()
         cursor.close()
+        
         return RedirectResponse(url="/historial", status_code=303)
 
     except Exception as e:
