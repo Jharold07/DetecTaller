@@ -31,15 +31,17 @@
                 <input type="number" name="edad" placeholder="Edad ejemplo: 1 - 18" required min="1" max="18"
                     class="input-nombre">
 
-                <label for="video" class="upload-label">
-                    
-                    <div class="upload-icon">⬆️
-                        <input type="file" name="archivo"  id="archivo" accept="video/*,image/*" required/>        
+                <div class="file-upload-container">
+                    <input type="file" name="archivo" id="archivo" accept="video/*,image/*" required />
+                    <label for="archivo" class="file-upload-label">
+                        Seleccionar archivo
+                    </label>
+                    <span id="file-name" class="file-name">Ningún archivo seleccionado</span>
+                    <div id="file-confirm" class="file-confirm" style="display: none;">
+                        Archivo listo para detectar
                     </div>
-                    <p class="upload-text" id="uploadText">Cargar archivo</p>
-                </label>
-                <p class="description" id="descText">Sube el video o imagen para detectar la emoción</p>
-
+                </div>
+        
                 <button type="submit" class="submit">Detectar</button>
                 <div id="mensajeDetectando" class="mensaje-detectando" style="display: none;">
                     Detectando emociones...
@@ -60,6 +62,9 @@
         <div class="modal-content">
             <span class="close-btn" onclick="cerrarModal()">&times;</span>
             <h2>Resultado de la detección</h2>
+            <p><strong>Nombre:</strong> <span id="video-nombre"></span></p>
+            <p><strong>Edad:</strong> <span id="video-edad"></span></p>
+            <p><strong>Tiempo de análisis:</strong> <span id="video-tiempo"></span> s</p>
             <table>
                 <thead>
                     <tr>
@@ -92,27 +97,28 @@
             <h2>Resultado de la detección</h2>
 
             <div style="display:flex; gap:16px; align-items:center; flex-wrap:wrap;">
-                <center> <img id="imagenMostrada" src="" alt="Imagen detectada" style="max-width:320px; border-radius:8px;"></center>
-               
-                
-                    <div>
-                        <p><b>Nombre:</b> <span id="imgNombreTxt"></span></p>
-                        <p><b>Edad:</b> <span id="imgEdadTxt"></span></p>
-                        <p><b>Emoción detectada:</b> <span id="imgEmocionTxt"></span></p>
-                        <p><b>Confianza:</b> <span id="imgConfianzaTxt"></span>%</p>
-                        <p><b>Tiempo de análisis:</b> <span id="imgTiempoTxt"></span> s</p>
+                <center> <img id="imagenMostrada" src="" alt="Imagen detectada"
+                        style="max-width:320px; border-radius:8px;"></center>
 
-                        <!-- apunta al endpoint guardarimagen -->
-                        <form method="POST" action="/guardar-imagen">
-                            <input type="hidden" name="nombre" id="imgNombre">
-                            <input type="hidden" name="edad" id="imgEdad">
-                            <input type="hidden" name="imagen_path" id="imgPath">
-                            <input type="hidden" name="emocion" id="imgEmocion">
-                            <input type="hidden" name="confianza" id="imgConfianza">
-                            <input type="hidden" name="tiempo_procesamiento" id="imgTiempo">
-                            <button type="submit" class="btn-guardar">Guardar</button>
-                        </form>
-                    </div>
+
+                <div>
+                    <p><b>Nombre:</b> <span id="imgNombreTxt"></span></p>
+                    <p><b>Edad:</b> <span id="imgEdadTxt"></span></p>
+                    <p><b>Emoción detectada:</b> <span id="imgEmocionTxt"></span></p>
+                    <p><b>Confianza:</b> <span id="imgConfianzaTxt"></span>%</p>
+                    <p><b>Tiempo de análisis:</b> <span id="imgTiempoTxt"></span> s</p>
+
+                    <!-- apunta al endpoint guardarimagen -->
+                    <form method="POST" action="/guardar-imagen">
+                        <input type="hidden" name="nombre" id="imgNombre">
+                        <input type="hidden" name="edad" id="imgEdad">
+                        <input type="hidden" name="imagen_path" id="imgPath">
+                        <input type="hidden" name="emocion" id="imgEmocion">
+                        <input type="hidden" name="confianza" id="imgConfianza">
+                        <input type="hidden" name="tiempo_procesamiento" id="imgTiempo">
+                        <button type="submit" class="btn-guardar">Guardar</button>
+                    </form>
+                </div>
             </div>
 
             <button onclick="cerrarModalImagen()" class="btn-subir">Cerrar</button>
@@ -161,22 +167,31 @@
 
 <script>
     const fileInput = document.getElementById('archivo');
-    const uploadText = document.getElementById('uploadText');
+    const fileNameSpan = document.getElementById('file-name');
+    const fileConfirm = document.getElementById('file-confirm');
     const descText = document.getElementById('descText');
 
     fileInput.addEventListener('change', () => {
-        const f = fileInput.files[0];
-        if (!f) return;
-        if (f.type.startsWith('image/')) {
-            uploadText.textContent = 'Cargar imagen';
+        const file = fileInput.files[0];
+        if (!file) {
+            fileNameSpan.textContent = "Ningún archivo seleccionado";
+            fileConfirm.style.display = "none";
+            return;
+        }
+
+        fileNameSpan.textContent = file.name.length > 35 
+            ? file.name.substring(0, 35) + "..." 
+            : file.name;
+
+        if (file.type.startsWith('image/')) {
             descText.textContent = 'Sube una imagen con el rostro en primer plano';
-        } else if (f.type.startsWith('video/')) {
-            uploadText.textContent = 'Cargar video';
+        } else if (file.type.startsWith('video/')) {
             descText.textContent = 'Sube un video para detectar la emoción a lo largo del tiempo';
         } else {
-            uploadText.textContent = 'Archivo no soportado';
-            descText.textContent = 'Selecciona una imagen o un video';
+            descText.textContent = 'Formato no soportado';
         }
+
+        fileConfirm.style.display = "block";
     });
 </script>
 
@@ -209,7 +224,7 @@
         const soloLetras = /^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]{3,30}$/;
 
         if (!soloLetras.test(nombre)) {
-            alert("⚠️ El nombre debe tener entre 3 y 30 letras, sin números ni símbolos.");
+            alert("El nombre debe tener entre 3 y 30 letras, sin números ni símbolos.");
             nombreInput.value = "";
             nombreInput.focus();
             mensaje.style.display = "none";
@@ -226,7 +241,6 @@
         const errorBox = document.getElementById("mensajeError");
 
         if (errorBox) {
-            // Desaparece después de 5 segundos
             setTimeout(() => {
                 errorBox.style.display = "none";
                 errorBox.setAttribute("data-visible", "false");
@@ -253,5 +267,34 @@
     };
 </script>
 {% endif %}
+
+{% if emociones_detectadas is defined and emociones_detectadas %}
+<script>
+    window.onload = function () {
+        const resultados = JSON.parse('{{ emociones_detectadas | safe }}');
+        const tabla = document.getElementById("tablaResultados");
+
+        // ✅ Listar emociones en la tabla (esto ya lo tenías)
+        resultados.forEach(e => {
+            const fila = document.createElement("tr");
+            fila.innerHTML = `<td>${e.emocion}</td><td>${e.inicio}</td><td>${e.fin}</td>`;
+            tabla.appendChild(fila);
+        });
+
+        // ✅ NUEVO: mostrar nombre, edad, archivo y tiempo en el modal
+        const nombre = "{{ nombre|default('') }}";
+        const edad = "{{ edad|default('') }}";
+        const tiempoProcesamiento = "{{ tiempo_procesamiento|default('') }}";
+
+        document.getElementById("video-nombre").textContent = nombre;
+        document.getElementById("video-edad").textContent = edad;
+        document.getElementById("video-tiempo").textContent = tiempoProcesamiento;
+
+        document.getElementById("modalResultado").style.display = "block";
+        document.getElementById("emocionesJsonInput").value = JSON.stringify(resultados);
+    };
+</script>
+{% endif %}
+
 
 </html>
