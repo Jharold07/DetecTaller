@@ -15,17 +15,34 @@ async def guardar(
     nombre: str = Form(...),
     edad: int = Form(...),
     video_nombre: str = Form(...),
-    emociones_json: str = Form(...)
+    emociones_json: str = Form(...),
+    tiempo_procesamiento: float = Form(...),
 ):
     try:
-        emociones = json.loads(emociones_json)
         usuario_id = request.cookies.get("usuario_id")
         if not usuario_id:
             return {"error": "No se encontró el usuario"}
+        
+        try:
+            emociones = json.loads(emociones_json)
+        except Exception:
+            return {"error": "Formato de emociones inválido"}
+
+        inicios = [float(e["inicio"]) for e in emociones if "inicio" in e]
+        fines   = [float(e["fin"])    for e in emociones if "fin" in e]
+        if not inicios or not fines:
+            return {"error": "Las emociones no contienen 'inicio' y 'fin'"}       
+
+
+        inicio_det = 0.0
+        fin_det = tiempo_procesamiento
 
         now = datetime.now()
         fecha = now.strftime("%Y-%m-%d")
         hora = now.strftime("%H:%M:%S")
+
+        if video_nombre.startswith("http"):
+            video_nombre = video_nombre.split("/")[-1]
 
         conn = mysql.connector.connect(
             host=os.getenv("MYSQL_HOST"),
@@ -34,16 +51,13 @@ async def guardar(
             password=os.getenv("MYSQL_PASSWORD"),
             database=os.getenv("MYSQL_DATABASE")
         )
-        cursor = conn.cursor()
-
-        if video_nombre.startswith("http"):
-            video_nombre = video_nombre.split("/")[-1]
+        cursor = conn.cursor()            
 
         for emocion in emociones:
             cursor.execute("""
                 INSERT INTO resultados_video 
-                (nombre, edad, video, emocion, inicio, fin, usuario_id, fecha, hora)
-                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
+                (nombre, edad, video, emocion, inicio, fin, usuario_id, fecha, hora, inicio_det, fin_det, tiempo_procesamiento)
+                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s);
             """, (
                 nombre,
                 edad,
@@ -53,7 +67,10 @@ async def guardar(
                 emocion["fin"],
                 usuario_id,
                 fecha,
-                hora
+                hora,
+                inicio_det,
+                fin_det,
+                tiempo_procesamiento
             ))
 
         conn.commit()

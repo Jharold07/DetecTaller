@@ -1,5 +1,6 @@
 import cv2
 import numpy as np
+from datetime import datetime
 
 def procesar_video(ruta_video, modelo, emociones):
     cap = cv2.VideoCapture(ruta_video)
@@ -9,7 +10,11 @@ def procesar_video(ruta_video, modelo, emociones):
     rostro_detectado = False
     emocion_anterior = None
     inicio_emocion = 0
+
     fps = cap.get(cv2.CAP_PROP_FPS)
+
+    if not fps or fps <= 0:
+        fps = 30.0  
     frame_id = 0
 
     while cap.isOpened():
@@ -33,8 +38,7 @@ def procesar_video(ruta_video, modelo, emociones):
         try:
             img = cv2.resize(frame, (224, 224))
             img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
-            img_array = np.array(img) / 255.0
-            img_array = img_array.reshape(1, 224, 224, 3)
+            img_array = (np.array(img) / 255.0).reshape(1, 224, 224, 3)
 
             pred = modelo.predict(img_array)
             emocion_idx = np.argmax(pred)
@@ -45,7 +49,6 @@ def procesar_video(ruta_video, modelo, emociones):
             if emocion_anterior is None:
                 emocion_anterior = emocion_actual
                 inicio_emocion = segundo_actual
-
             elif emocion_actual != emocion_anterior:
                 resultados.append({
                     "emocion": emocion_anterior,
@@ -64,10 +67,16 @@ def procesar_video(ruta_video, modelo, emociones):
             "inicio": inicio_emocion,
             "fin": int(frame_id // fps)
         })
-
     cap.release()
 
-    if not rostro_detectado:
-        return None  
+    if not rostro_detectado or not resultados:
+        return None
+    
+    inicio_det = resultados[0]["inicio"]
+    fin_det = resultados[-1]["fin"]
 
-    return resultados
+    return {
+        "resultados": resultados,
+        "inicio_det": inicio_det,
+        "fin_det": fin_det
+    }

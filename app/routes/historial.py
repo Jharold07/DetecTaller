@@ -91,7 +91,6 @@ async def ver_historial(request: Request):
             s3_key = f"videos/{archivo}" if not archivo.startswith("videos/") else archivo
         else:
             s3_key = f"fotos/{archivo}" if not archivo.startswith("fotos/") else archivo
-
         
         # URL firma S3
         url = s3.generate_presigned_url(

@@ -105,17 +105,45 @@ async def subir(
         except Exception as e:
             return HTMLResponse(content=f"Error al subir video a S3: {e}", status_code=500)
 
-        # Desacargar temporalmente y subir 
         ruta_local = f"temp_{archivo.filename}"
         try:
+            t0 = time.time()
             s3.download_file(BUCKET_NAME, video_key, ruta_local)
-            resultados = procesar_video(ruta_local, modelo, emociones)
+            res = procesar_video(ruta_local, modelo, emociones)
+            tiempo_procesamiento = round(time.time() - t0, 2)
             os.remove(ruta_local)
         except Exception as e:
             return HTMLResponse(content=f"Error al procesar el video: {e}", status_code=500)
 
+        if not res:
+            return templates.TemplateResponse("index.html", {
+                "request": request,
+                "email": email,
+                "mensaje_error": "No se detectaron rostros en el video. Intenta con otro video.",
+                "emociones_detectadas": None,
+                "nombre": nombre,
+                "edad": edad,
+                "video_nombre": archivo.filename
+            })
+
+        if isinstance(res, dict):
+            emociones_list = res.get("resultados", [])
+        else:
+            emociones_list = res  # ya es una lista
+
+        if not emociones_list:
+            return templates.TemplateResponse("index.html", {
+                "request": request,
+                "email": email,
+                "mensaje_error": "No se detectaron emociones en el video procesado.",
+                "emociones_detectadas": None,
+                "nombre": nombre,
+                "edad": edad,
+                "video_nombre": archivo.filename
+            })
+        
         # Si no se detectaron rostros
-        if resultados is None:
+        if res is None:
             return templates.TemplateResponse("index.html", {
                 "request": request,
                 "email": email,
@@ -125,26 +153,24 @@ async def subir(
                 "edad": edad,
                 "video_nombre": archivo.filename
             })  
-        
+    
         # === 3. Renderizar resultados ===
         return templates.TemplateResponse("index.html", {
             "request": request,
             "email": email,
-            "emociones_detectadas": json.dumps(resultados),
+            "emociones_detectadas": json.dumps(emociones_list),
             "nombre": nombre,
             "edad": edad,
-            "video_nombre": archivo.filename
+            "video_nombre": archivo.filename,
+            "tiempo_procesamiento": tiempo_procesamiento
         })
 
     # ----- CASO IMAGEN -----
     elif content_type.startswith("image/"):
         try:
-            # 1) Leer en memoria
             raw = await archivo.read()
             img_pil = Image.open(BytesIO(raw)).convert("RGB")
 
-            # 2) Validar rostro (Haar Cascade)
-            #    (cv2 incluye el XML en cv2.data.haarcascades)
             gray = cv2.cvtColor(np.array(img_pil), cv2.COLOR_RGB2GRAY)
             face_cascade = cv2.CascadeClassifier(
                 cv2.data.haarcascades + 'haarcascade_frontalface_default.xml'
@@ -161,7 +187,6 @@ async def subir(
                     "video_nombre": ""
                 })
 
-            # 3) Preprocesar para el modelo
             img_array = np.array(img_pil.resize((224, 224))).astype("float32") / 255.0
             img_array = img_array.reshape(1, 224, 224, 3)
 
@@ -173,15 +198,18 @@ async def subir(
             emocion_idx = int(np.argmax(pred[0]))
             emocion = emociones[emocion_idx]
             confianza = float(pred[0][emocion_idx]) * 100.0
-            tiempo_procesamiento = round(t1 - t0, 2)
 
-            # Guardar imagen en S3 (carpeta fotos/)
+            inicio_det = round(t0, 2)
+            fin_det = round(t1, 2)
+            tiempo_procesamiento = round(fin_det - inicio_det, 2)
+
+
             safe_name = nombre.strip().replace(" ", "_")
             filename = f"{safe_name}_{datetime.now().strftime('%Y%m%d%H%M%S')}.jpg"
+
             foto_key = f"{FOTOS_PREFIX}/{filename}"
             s3.upload_fileobj(BytesIO(raw), BUCKET_NAME, foto_key)
 
-            # URL firmada para mostrar la imagen en el modal
             imagen_url = s3.generate_presigned_url(
                 'get_object',
                 Params={'Bucket': BUCKET_NAME, 'Key': foto_key},
@@ -192,20 +220,18 @@ async def subir(
             "emocion": emocion,
             "confianza": f"{confianza:.2f}",
             "tiempo": tiempo_procesamiento,
-            "imagen_guardada": foto_key,   # clave S3
-            "imagen_url": imagen_url,       # URL firmada para <img>
+            "imagen_guardada": foto_key,   
+            "imagen_url": imagen_url,       
             "nombre": nombre,
             "edad": edad
             }
 
-            # Devolver a la vista (usaremos estos campos en la UI para el modal de imagen)
             return templates.TemplateResponse("index.html", {
                 "request": request,
                 "email": email,
                 "resultado_imagen": res_img,
                 "resultado_imagen_json": json.dumps(res_img),  
 
-                # Para que el modal de video NO salte
                 "emociones_detectadas": None,
                 "video_nombre": ""
             })
@@ -213,7 +239,6 @@ async def subir(
         except Exception as e:
             return HTMLResponse(content=f"Error al procesar la imagen: {e}", status_code=500)
 
-    #  Tipo no soportado 
     else:
         return HTMLResponse(content="Tipo de archivo no soportado. Sube una imagen o un video.", status_code=400)
 

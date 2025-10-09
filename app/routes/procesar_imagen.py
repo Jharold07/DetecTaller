@@ -76,9 +76,8 @@ async def predecir_imagen(
         return request.app.templates.TemplateResponse("login.html", {"request": request, "error": "No logueado"})
 
     try:
-        t0 = time.time()
+        inicio_det = datetime.now()
 
-        # 1) Leer bytes y decodificar para validar rostro
         raw = await imagen.read()
         file_arr = np.frombuffer(raw, np.uint8)
         im_bgr = cv2.imdecode(file_arr, cv2.IMREAD_COLOR)
@@ -89,53 +88,48 @@ async def predecir_imagen(
                 "error": "La imagen no es válida o está corrupta."
             })
 
-        # 2) Validación de rostro
         if not hay_rostro(im_bgr):
             return request.app.templates.TemplateResponse("index.html", {
                 "request": request, "email": email,
                 "error": "No se detectó rostro en la imagen. Intenta con otra."
             })
 
-        # 3) Preprocesar para el modelo (RGB 224x224, /255)
         im_rgb = cv2.cvtColor(im_bgr, cv2.COLOR_BGR2RGB)
         pil = Image.fromarray(im_rgb).convert("RGB").resize((224, 224))
         arr = np.asarray(pil).astype("float32") / 255.0
         arr = np.expand_dims(arr, axis=0)
 
-        # 4) Predecir
         pred = MODELO.predict(arr, verbose=0)
         idx = int(np.argmax(pred[0]))
         emocion = EMOCIONES[idx]
         confianza = float(pred[0][idx] * 100.0)
 
-        # 5) Guardar original en S3 (carpeta fotos/)
         ext = os.path.splitext(imagen.filename or ".jpg")[1] or ".jpg"
         key = f"fotos/{safe_filename(nombre, ext)}"
         s3.put_object(Bucket=BUCKET_NAME, Key=key, Body=raw, ContentType=imagen.content_type or "image/jpeg")
 
-        # 6) Insertar en BD
-        tiempo = round(time.time() - t0, 2)
+        fin_det = datetime.now()
+        tiempo = round((fin_det - inicio_det).total_seconds(), 2)
         conn = get_conn()
         cur = conn.cursor()
         cur.execute("""
             INSERT INTO resultados_imagen
-              (usuario_id, nombre, edad, imagen_path, emocion, confianza, tiempo_procesamiento, fecha, hora)
-            VALUES (%s, %s, %s, %s, %s, %s, %s, CURDATE(), CURTIME())
-        """, (int(usuario_id), nombre, int(edad), key, emocion, confianza, tiempo))
+              (usuario_id, nombre, edad, imagen_path, emocion, confianza, tiempo_procesamiento, fecha, hora, inicio_det, fin_det)
+            VALUES (%s, %s, %s, %s, %s, %s, %s, CURDATE(), CURTIME(), %s, %s)
+        """, (int(usuario_id), nombre, int(edad), key, emocion, confianza, tiempo, inicio_det, fin_det))
         conn.commit()
         cur.close(); conn.close()
 
-        # 7) Mostrar resultado (URL firmada para la vista)
         url_imagen = presigned(key)
         return request.app.templates.TemplateResponse("index.html", {
             "request": request,
             "email": email,
             "emocion": emocion,
             "confianza": f"{confianza:.2f}%",
-            "imagen_guardada": url_imagen,   # úsalo en la tarjeta de resultado
+            "imagen_guardada": url_imagen,   
             "nombre": nombre,
             "edad": edad,
-            "tiempo": tiempo
+            "tiempo": tiempo,
         })
 
     except Exception as e:
