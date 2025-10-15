@@ -17,6 +17,8 @@ def procesar_video(ruta_video, modelo, emociones):
         fps = 30.0  
     frame_id = 0
 
+    inicio_det_dt = datetime.now()
+
     while cap.isOpened():
         ret, frame = cap.read()
         if not ret:
@@ -72,11 +74,15 @@ def procesar_video(ruta_video, modelo, emociones):
     if not rostro_detectado or not resultados:
         return None
     
+    fin_det_dt = datetime.now()
+    tiempo_procesamiento = (fin_det_dt - inicio_det_dt).total_seconds()
+    
     inicio_det = resultados[0]["inicio"]
     fin_det = resultados[-1]["fin"]
 
     return {
         "resultados": resultados,
-        "inicio_det": inicio_det,
-        "fin_det": fin_det
+        "inicio_det": inicio_det_dt.strftime("%H:%M:%S.%f")[:-3],
+        "fin_det": fin_det_dt.strftime("%H:%M:%S.%f")[:-3],
+        "tiempo_procesamiento": tiempo_procesamiento
     }

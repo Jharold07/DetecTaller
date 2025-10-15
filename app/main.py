@@ -107,10 +107,11 @@ async def subir(
 
         ruta_local = f"temp_{archivo.filename}"
         try:
-            t0 = time.time()
             s3.download_file(BUCKET_NAME, video_key, ruta_local)
             res = procesar_video(ruta_local, modelo, emociones)
-            tiempo_procesamiento = round(time.time() - t0, 2)
+            inicio_det = res.get("inicio_det", "")
+            fin_det    = res.get("fin_det", "")
+            tiempo_procesamiento = res.get("tiempo_procesamiento")
             os.remove(ruta_local)
         except Exception as e:
             return HTMLResponse(content=f"Error al procesar el video: {e}", status_code=500)
@@ -130,7 +131,8 @@ async def subir(
             emociones_list = res.get("resultados", [])
         else:
             emociones_list = res  # ya es una lista
-
+        
+        # Si no se detectaron emociones
         if not emociones_list:
             return templates.TemplateResponse("index.html", {
                 "request": request,
@@ -153,7 +155,7 @@ async def subir(
                 "edad": edad,
                 "video_nombre": archivo.filename
             })  
-    
+
         # === 3. Renderizar resultados ===
         return templates.TemplateResponse("index.html", {
             "request": request,
@@ -162,6 +164,8 @@ async def subir(
             "nombre": nombre,
             "edad": edad,
             "video_nombre": archivo.filename,
+            "inicio_det": inicio_det,
+            "fin_det": fin_det,
             "tiempo_procesamiento": tiempo_procesamiento
         })
 

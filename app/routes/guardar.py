@@ -34,8 +34,9 @@ async def guardar(
             return {"error": "Las emociones no contienen 'inicio' y 'fin'"}       
 
 
-        inicio_det = 0.0
-        fin_det = tiempo_procesamiento
+        form_data = await request.form()
+        inicio_det = form_data.get("inicio_det")
+        fin_det = form_data.get("fin_det")
 
         now = datetime.now()
         fecha = now.strftime("%Y-%m-%d")
