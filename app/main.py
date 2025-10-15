@@ -112,6 +112,8 @@ async def subir(
             inicio_det = res.get("inicio_det", "")
             fin_det    = res.get("fin_det", "")
             tiempo_procesamiento = res.get("tiempo_procesamiento")
+            precision_global = res.get("precision_global", 0.0)
+
             os.remove(ruta_local)
         except Exception as e:
             return HTMLResponse(content=f"Error al procesar el video: {e}", status_code=500)
@@ -166,7 +168,8 @@ async def subir(
             "video_nombre": archivo.filename,
             "inicio_det": inicio_det,
             "fin_det": fin_det,
-            "tiempo_procesamiento": tiempo_procesamiento
+            "tiempo_procesamiento": tiempo_procesamiento,
+            "precision_global": precision_global
         })
 
     # ----- CASO IMAGEN -----

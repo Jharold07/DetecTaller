@@ -10,6 +10,8 @@ def procesar_video(ruta_video, modelo, emociones):
     rostro_detectado = False
     emocion_anterior = None
     inicio_emocion = 0
+    total_confianza = 0.0
+    total_frames = 0
 
     fps = cap.get(cv2.CAP_PROP_FPS)
 
@@ -18,6 +20,7 @@ def procesar_video(ruta_video, modelo, emociones):
     frame_id = 0
 
     inicio_det_dt = datetime.now()
+    
 
     while cap.isOpened():
         ret, frame = cap.read()
@@ -45,6 +48,10 @@ def procesar_video(ruta_video, modelo, emociones):
             pred = modelo.predict(img_array)
             emocion_idx = np.argmax(pred)
             emocion_actual = emociones[emocion_idx]
+
+            confianza_actual = float(np.max(pred))
+            total_confianza += confianza_actual
+            total_frames += 1
 
             segundo_actual = int(frame_id // fps)
 
@@ -76,7 +83,7 @@ def procesar_video(ruta_video, modelo, emociones):
     
     fin_det_dt = datetime.now()
     tiempo_procesamiento = (fin_det_dt - inicio_det_dt).total_seconds()
-    
+    precision_global = round((total_confianza / total_frames) * 100, 2) if total_frames > 0 else 0.0
     inicio_det = resultados[0]["inicio"]
     fin_det = resultados[-1]["fin"]
 
@@ -84,5 +91,6 @@ def procesar_video(ruta_video, modelo, emociones):
         "resultados": resultados,
         "inicio_det": inicio_det_dt.strftime("%H:%M:%S.%f")[:-3],
         "fin_det": fin_det_dt.strftime("%H:%M:%S.%f")[:-3],
-        "tiempo_procesamiento": tiempo_procesamiento
+        "tiempo_procesamiento": tiempo_procesamiento,
+        "precision_global": precision_global
     }

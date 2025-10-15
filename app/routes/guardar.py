@@ -37,6 +37,7 @@ async def guardar(
         form_data = await request.form()
         inicio_det = form_data.get("inicio_det")
         fin_det = form_data.get("fin_det")
+        precision_global = form_data.get("precision_global")
 
         now = datetime.now()
         fecha = now.strftime("%Y-%m-%d")
@@ -57,8 +58,8 @@ async def guardar(
         for emocion in emociones:
             cursor.execute("""
                 INSERT INTO resultados_video 
-                (nombre, edad, video, emocion, inicio, fin, usuario_id, fecha, hora, inicio_det, fin_det, tiempo_procesamiento)
-                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s);
+                (nombre, edad, video, emocion, inicio, fin, usuario_id, fecha, hora, inicio_det, fin_det, tiempo_procesamiento, precision_global)
+                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s);
             """, (
                 nombre,
                 edad,
@@ -71,7 +72,8 @@ async def guardar(
                 hora,
                 inicio_det,
                 fin_det,
-                tiempo_procesamiento
+                tiempo_procesamiento,
+                precision_global
             ))
 
         conn.commit()
