@@ -40,7 +40,7 @@
                 </select>
 
                 <input type="date" name="fecha" value="{{ request.query_params.get('fecha', '') }}">
-                <button type="submit" class="submit-btn">Filtrar</button>
+                <button type="submit" class="submit-btn btn-ver-modal">Filtrar</button>
             </form>
 
             <table class="tabla-historial">
@@ -78,16 +78,20 @@
                 </tbody>
             </table>
             {% if not historial %}
-            <p class="no-result">No hay resultados para los filtros aplicados.</p>
+
+            <p class="no-result">Sin resultados</p>
             {% endif %}
 
             <!-- MODAL -->
             <div id="modalResultado" class="modal" style="display:none;">
                 <div class="modal-content">
                     <span class="close-btn" onclick="cerrarModal()">&times;</span>
-                    <h2 style="color: #003459;">Resultado de la detección</h2>
-                    <p><strong style="color: #003459;">Nombre:</strong> <span id="modalNombre"></span> |
-                        <strong style="color: #003459;">Edad:</strong> <span id="modalEdad"></span>
+                    <h2 >Resultado de la detección</h2>
+                    <p><strong >Nombre:</strong> <span id="modalNombre"></span> |
+                        <strong >Edad:</strong> <span id="modalEdad"></span>
+                    </p>
+                    <p><strong>Precision:</strong> <span id="precisionGlobal"></span> |
+                        <strong>Tiempo proc.</strong> <span id="tiempoProcesamiento"></span>
                     </p>
                     <video id="modalVideo" controls width="100%" style="margin-bottom: 20px;">
                         <source id="modalVideoSource" src="" type="video/mp4">
@@ -97,9 +101,6 @@
                     <div class="modelcontendimagen">
                         <img id="modalImagen" src="" style="max-width:100%;margin-bottom:20px;display:none;" />
                     </div>
-
-                    <!-- Imagen -->
-
 
                     <!-- Gráfico de línea de tiempo -->
                     <div id="videoExtra" style="display: none;">
@@ -120,10 +121,10 @@
                     </div>
 
                     <!-- Datos extra solo para imagen -->
-                    <div id="imagenExtra" style="display:none;">
+                    <div class="items-text" id="imagenExtra" style="display:none;">
                         <p><strong>Emoción detectada:</strong> <span id="imgEmocion"></span></p>
-                        <p><strong>Confianza:</strong> <span id="imgConfianza"></span></p>
-                        <p><strong>Tiempo de análisis:</strong> <span id="imgTiempo"></span> segundos</p>
+                        <p><strong>Precision:</strong> <span id="imgConfianza"></span> |
+                        <strong>Tiempo proc.:</strong> <span id="imgTiempo"></span> s</p>
                     </div>
 
                     <button onclick="cerrarModal()" class="submit-btn">Cerrar</button>
@@ -135,7 +136,7 @@
                     <input type="hidden" name="nombre" value="{{ request.query_params.get('nombre', '') }}">
                     <input type="hidden" name="emocion" value="{{ request.query_params.get('emocion', '') }}">
                     <input type="hidden" name="fecha" value="{{ request.query_params.get('fecha', '') }}">
-                    <button type="submit" class="btn-exportar">Exportar PDF</button>
+                    <button type="submit" class="btn-exportar">Generar reporte en PDF</button>
                 </form>
             </div>
         </div>
@@ -172,6 +173,13 @@
                 videoExtra.style.display = "block";
                 videoSource.src = data.archivo;
                 videoTag.load();
+
+                // ✅ Mostrar precisión global y tiempo procesamiento
+                const precision = data.confianza != null ? Number(data.confianza).toFixed(2) + "%" : "-";
+                document.getElementById("precisionGlobal").innerText = precision;
+
+                const tiempo = data.tiempo_procesamiento != null ? Number(data.tiempo_procesamiento).toFixed(2) + " s" : "-";
+                document.getElementById("tiempoProcesamiento").innerText = tiempo;
 
                 if (Array.isArray(data.emociones)) {
                     data.emociones.forEach(e => {

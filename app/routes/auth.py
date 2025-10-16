@@ -42,7 +42,7 @@ async def login_post(request: Request, usuario: str = Form(...), password: str =
         return templates.TemplateResponse("login.html", {"request": request, "error": "Credenciales inválidas."})
 
     except Exception as e:
-        print(f"🔴 ERROR LOGIN: {e}")
+        print(f"ERROR LOGIN: {e}")
         return HTMLResponse(f"<h2>ERROR EN LOGIN: {str(e)}</h2>", status_code=500)
 
 @router.get("/register", response_class=HTMLResponse)

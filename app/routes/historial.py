@@ -65,7 +65,7 @@ async def ver_historial(request: Request):
         params.append(f"%{nombre_filtro}%")
 
     if emocion_filtro:
-        query += " AND emocion %s"
+        query += " AND emocion = %s"
         params.append(emocion_filtro)
 
     if fecha_filtro:
@@ -109,6 +109,8 @@ async def ver_historial(request: Request):
                     "hora": str(hora),
                     "nombre": nombre,
                     "edad": edad,
+                    "confianza": float(confianza) if confianza is not None else None,
+                    "tiempo_procesamiento": float(tiempo_proc) if tiempo_proc is not None else None,
                     "emociones": []          
                 } 
 

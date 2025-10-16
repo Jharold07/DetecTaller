@@ -41,7 +41,7 @@
                         Archivo listo para detectar
                     </div>
                 </div>
-        
+
                 <button type="submit" class="submit">Detectar</button>
                 <div id="mensajeDetectando" class="mensaje-detectando" style="display: none;">
                     Detectando emociones...
@@ -62,9 +62,13 @@
         <div class="modal-content">
             <span class="close-btn" onclick="cerrarModal()">&times;</span>
             <h2>Resultado de la detección</h2>
-            <p><strong>Nombre:</strong> <span id="video-nombre"></span></p>
-            <p><strong>Edad:</strong> <span id="video-edad"></span></p>
-            <p><strong>Tiempo de análisis:</strong> <span id="video-tiempo"></span> s</p>
+            <div class="items-text">
+                <p><strong>Nombre:</strong> <span id="video-nombre"></span>
+                    <strong>Edad:</strong> <span id="video-edad"></span>
+                </p>
+            </div>
+
+            <h3>Emociones detectadas en el video:</h3>
             <table>
                 <thead>
                     <tr>
@@ -77,15 +81,19 @@
                     <!-- Insertado desde JS -->
                 </tbody>
             </table>
+            <p><strong>Tiempo proc:</strong> <span id="video-tiempo"></span>s
+                <strong>Precisión:</strong> <span id="video-precision"></span>%
+            </p>
             <form method="POST" action="/guardar">
                 <input type="hidden" name="nombre" value="{{ nombre }}">
                 <input type="hidden" name="edad" value="{{ edad }}">
                 <input type="hidden" name="video_nombre" value="{{ video_nombre }}">
                 <input type="hidden" name="emociones_json" id="emocionesJsonInput">
                 <input type="hidden" name="inicio_det" value="{{ inicio_det }}">
-                <input type="hidden" name="fin_det" value="{{ fin_det }}"> 
+                <input type="hidden" name="fin_det" value="{{ fin_det }}">
                 <input type="hidden" name="tiempo_procesamiento" value="{{ tiempo_procesamiento }}">
                 <input type="hidden" name="precision_global" value="{{ precision_global }}">
+                <input type="hidden" name="precision_global" id="precisionGlobalInput">
                 <button type="submit" class="btn-guardar">Guardar</button>
             </form>
             <button onclick="cerrarModal()" class="btn-subir">Cerrar</button>
@@ -109,6 +117,7 @@
                     <p><b>Emoción detectada:</b> <span id="imgEmocionTxt"></span></p>
                     <p><b>Confianza:</b> <span id="imgConfianzaTxt"></span>%</p>
                     <p><b>Tiempo de análisis:</b> <span id="imgTiempoTxt"></span> s</p>
+
 
                     <!-- apunta al endpoint guardarimagen -->
                     <form method="POST" action="/guardar-imagen">
@@ -181,8 +190,8 @@
             return;
         }
 
-        fileNameSpan.textContent = file.name.length > 35 
-            ? file.name.substring(0, 35) + "..." 
+        fileNameSpan.textContent = file.name.length > 35
+            ? file.name.substring(0, 35) + "..."
             : file.name;
 
         if (file.type.startsWith('image/')) {
@@ -287,10 +296,13 @@
         const nombre = "{{ nombre|default('') }}";
         const edad = "{{ edad|default('') }}";
         const tiempoProcesamiento = "{{ tiempo_procesamiento|default('') }}";
+        const precisionGlobal = "{{ precision_global|default('') }}";
 
         document.getElementById("video-nombre").textContent = nombre;
         document.getElementById("video-edad").textContent = edad;
         document.getElementById("video-tiempo").textContent = tiempoProcesamiento;
+        document.getElementById("video-precision").textContent = precisionGlobal;
+        document.getElementById("precisionGlobalInput").value = precisionGlobal;
 
         document.getElementById("modalResultado").style.display = "block";
         document.getElementById("emocionesJsonInput").value = JSON.stringify(resultados);
