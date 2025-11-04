@@ -29,6 +29,8 @@ from botocore.exceptions import NoCredentialsError
 import shutil
 from pathlib import Path
 
+from app.middleware.auditoria import AuditoriaMiddleware
+
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 VIDEOS_PREFIX = "videos"
@@ -36,7 +38,6 @@ FOTOS_PREFIX  = "fotos"
 BUCKET_NAME = os.getenv("BUCKET_NAME")
 RUTA_VIDEOS = "videos"
 
-# === Cargar variables de entorno ===
 load_dotenv()
 
 s3 = boto3.client(
@@ -47,6 +48,7 @@ s3 = boto3.client(
 )
 
 app = FastAPI()
+app.add_middleware(AuditoriaMiddleware)
 
 app.mount("/static", StaticFiles(directory="app/static"), name="static")
 templates = Jinja2Templates(directory="app/templates")
