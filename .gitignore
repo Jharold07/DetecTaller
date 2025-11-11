@@ -1,1 +1,93 @@
+# ============================
+# IGNORAR ARCHIVOS Y CARPETAS LOCALES - PROYECTO FASTAPI
+# ============================
+
+# Entornos virtuales
+venv/
+env/
+ENV/
+.venv/
+
+# Configuración de entorno
 .env
+*.env
+.env.*
+
+# Compilaciones y caché de Python
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Archivos de logs y temporales
+*.log
+nohup.out
+*.pid
+*.tmp
+
+# Archivos de sistema y editor
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+*.code-workspace
+
+# Archivos de pruebas y cobertura
+.pytest_cache/
+.cache/
+.coverage
+htmlcov/
+
+# Bases de datos locales
+*.db
+*.sqlite3
+
+# Archivos de despliegue / empaquetado
+*.bak
+*.tar
+*.gz
+*.zip
+*.7z
+*.swp
+
+# Archivos generados o exportados
+*.pdf
+*.csv
+*.xlsx
+*.json
+*.xml
+
+# Modelos grandes o binarios (excepto .h5, manejado por Git LFS)
+*.pth
+*.pt
+*.onnx
+
+# Directorios de datos, reportes o videos
+__data__/
+data/
+datasets/
+backups/
+uploads/
+videos/
+reports/
+
+# Carpetas de build / distribución
+dist/
+build/
+*.egg-info/
+
+# Archivos de Docker y contenedores temporales
+*.tar
+docker-compose.override.yml
+
+# Archivos específicos de tu proyecto
+app/__pycache__/
+app/logs/
+app/temp/
+app/test_*/   # si tienes módulos de prueba temporal
+
+# Archivos de entorno de JetBrains / PyCharm
+*.iml
+out/
+
+# Archivos de configuración local de AWS
+.aws/

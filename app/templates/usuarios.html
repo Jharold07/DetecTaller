@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Gestión de Usuarios</title>
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+    <h1>Gestión de Usuarios</h1>
+
+    <p>Usuario actual: {{ usuario_actual.nombre }} ({{ usuario_actual.rol }})</p>
+
+    {% if request.query_params.get("ok") == "CREADO" %}
+        <p style="color: green;">Usuario creado correctamente.</p>
+    {% elif request.query_params.get("ok") == "ESTADO" %}
+        <p style="color: green;">Estado actualizado.</p>
+    {% elif request.query_params.get("ok") == "ROL" %}
+        <p style="color: green;">Rol actualizado.</p>
+    {% elif request.query_params.get("error") == "EMAIL_EXISTE" %}
+        <p style="color: red;">El correo ya está registrado.</p>
+    {% endif %}
+
+    <h2>Crear nuevo usuario</h2>
+    <form method="post" action="/admin/usuarios/crear">
+        <label>Nombre:</label>
+        <input type="text" name="nombre" required>
+        <label>Correo:</label>
+        <input type="email" name="email" required>
+        <label>Contraseña:</label>
+        <input type="password" name="password" required>
+        <label>Rol:</label>
+        <select name="rol" required>
+            {% for r in roles_disponibles %}
+                <option value="{{ r.name }}">{{ r.name }}</option>
+            {% endfor %}
+        </select>
+        <button type="submit">Crear usuario</button>
+    </form>
+
+    <h2>Listado de usuarios</h2>
+    <table border="1" cellpadding="6">
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>Nombre</th>
+                <th>Correo</th>
+                <th>Rol</th>
+                <th>Estado</th>
+                <th>Cambiar rol</th>
+                <th>Cambiar estado</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for u in usuarios %}
+            <tr>
+                <td>{{ u.id }}</td>
+                <td>{{ u.nombre }}</td>
+                <td>{{ u.email }}</td>
+                <td>{{ u.rol }}</td>
+                <td>{{ u.estado }}</td>
+                <td>
+                    {% if u.rol != 'ADMIN' %}
+                    <form method="post" action="/admin/usuarios/{{ u.id }}/cambiar-rol">
+                        <select name="rol">
+                            {% for r in roles_disponibles %}
+                                <option value="{{ r.name }}" {% if r.id == u.rol_id %}selected{% endif %}>
+                                    {{ r.name }}
+                                </option>
+                            {% endfor %}
+                        </select>
+                        <button type="submit">Guardar</button>
+                    </form>
+                    {% else %}
+                        (ADMIN)
+                    {% endif %}
+                </td>
+                <td>
+                    {% if u.rol != 'ADMIN' %}
+                    <form method="post" action="/admin/usuarios/{{ u.id }}/cambiar-estado">
+                        <button type="submit">
+                            {% if u.estado == 'ACTIVO' %}Desactivar{% else %}Activar{% endif %}
+                        </button>
+                    </form>
+                    {% else %}
+                        -
+                    {% endif %}
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    <p><a href="/historial">Volver al historial</a></p>
+</body>
+</html>
