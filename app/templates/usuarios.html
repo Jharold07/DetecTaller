@@ -1,95 +1,227 @@
 <!DOCTYPE html>
-<html lang="es">
+<html lang="en">
+
 <head>
     <meta charset="UTF-8">
-    <title>Gestión de Usuarios</title>
+    <title>DetectEmotion</title>
     <link rel="stylesheet" href="/static/style.css">
 </head>
+
 <body>
-    <h1>Gestión de Usuarios</h1>
+    <header>
+        <div class="logo">DetectEmotion</div>
+        <nav>
+            <span class="user-email">
+                {{ request.cookies.get('nombre') or request.cookies.get('email') or '' }}
+            </span>
 
-    <p>Usuario actual: {{ usuario_actual.nombre }} ({{ usuario_actual.rol }})</p>
+            {% if request.cookies.get('rol') == 'ADMIN' %}
+            <a href="/admin/usuarios">Administrar</a>
+            {% endif %}
+            <a href="/">Inicio</a>
+            <a href="/historial">Historial</a>
+            <a href="/login">Cerrar Sesión</a>
+        </nav>
+    </header>
+    <main>
+        <div class="container">
+            <div class="titulo">
+                <h2>Administrar Usuarios</h2>
+            </div>
+                
+            <p>Usuario actual logeado: {{ usuario_actual.nombre }} ({{ usuario_actual.rol }})</p>
 
-    {% if request.query_params.get("ok") == "CREADO" %}
-        <p style="color: green;">Usuario creado correctamente.</p>
-    {% elif request.query_params.get("ok") == "ESTADO" %}
-        <p style="color: green;">Estado actualizado.</p>
-    {% elif request.query_params.get("ok") == "ROL" %}
-        <p style="color: green;">Rol actualizado.</p>
-    {% elif request.query_params.get("error") == "EMAIL_EXISTE" %}
-        <p style="color: red;">El correo ya está registrado.</p>
-    {% endif %}
+            {% if request.query_params.get("ok") == "CREADO" %}
+            <p style="color: green;">Usuario creado correctamente.</p>
+            {% elif request.query_params.get("ok") == "ESTADO" %}
+            <p style="color: green; ;" >Estado actualizado.</p>
+            {% elif request.query_params.get("ok") == "ROL" %}
+            <p style="color: green;">Rol actualizado.</p>
+            {% elif request.query_params.get("error") == "EMAIL_EXISTE" %}
+            <p style="color: red;">El correo ya está registrado.</p>
+            {% endif %}
 
-    <h2>Crear nuevo usuario</h2>
-    <form method="post" action="/admin/usuarios/crear">
-        <label>Nombre:</label>
-        <input type="text" name="nombre" required>
-        <label>Correo:</label>
-        <input type="email" name="email" required>
-        <label>Contraseña:</label>
-        <input type="password" name="password" required>
-        <label>Rol:</label>
-        <select name="rol" required>
-            {% for r in roles_disponibles %}
+        <!-- Crear nuevo usuario -->
+        
+        <h2 class="admin-title">Crear nuevo usuario</h2>
+        
+        
+        <div title=""></div>
+        <form method="post" action="/admin/usuarios/crear" class="admin-form-inline">
+            <input type="text" name="nombre" placeholder="Nombre" required>
+            <input type="email" name="email" placeholder="Correo" required>
+            <input type="password" name="password" placeholder="Contraseña" required>
+            <select name="rol" required>
+                {% for r in roles_disponibles %}
                 <option value="{{ r.name }}">{{ r.name }}</option>
-            {% endfor %}
-        </select>
-        <button type="submit">Crear usuario</button>
-    </form>
+                {% endfor %}
+            </select>
+            <button type="submit">Crear usuario</button>
+        </form>
 
-    <h2>Listado de usuarios</h2>
-    <table border="1" cellpadding="6">
-        <thead>
-            <tr>
-                <th>ID</th>
-                <th>Nombre</th>
-                <th>Correo</th>
-                <th>Rol</th>
-                <th>Estado</th>
-                <th>Cambiar rol</th>
-                <th>Cambiar estado</th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for u in usuarios %}
-            <tr>
-                <td>{{ u.id }}</td>
-                <td>{{ u.nombre }}</td>
-                <td>{{ u.email }}</td>
-                <td>{{ u.rol }}</td>
-                <td>{{ u.estado }}</td>
-                <td>
-                    {% if u.rol != 'ADMIN' %}
-                    <form method="post" action="/admin/usuarios/{{ u.id }}/cambiar-rol">
-                        <select name="rol">
-                            {% for r in roles_disponibles %}
-                                <option value="{{ r.name }}" {% if r.id == u.rol_id %}selected{% endif %}>
-                                    {{ r.name }}
-                                </option>
-                            {% endfor %}
-                        </select>
-                        <button type="submit">Guardar</button>
-                    </form>
-                    {% else %}
-                        (ADMIN)
-                    {% endif %}
-                </td>
-                <td>
-                    {% if u.rol != 'ADMIN' %}
-                    <form method="post" action="/admin/usuarios/{{ u.id }}/cambiar-estado">
-                        <button type="submit">
-                            {% if u.estado == 'ACTIVO' %}Desactivar{% else %}Activar{% endif %}
-                        </button>
-                    </form>
-                    {% else %}
-                        -
-                    {% endif %}
-                </td>
-            </tr>
-            {% endfor %}
-        </tbody>
-    </table>
+        <!-- Listado de usuarios -->
+        <div class="section-separator">
+            <div class="titulo">
+                <h2 class="admin-title">Usuarios</h2>
+            </div>
+            <div class="admin-subtitle">
+                <p>Puedes ver y gestionar los usuarios registrados en el sistema.</p>
+            </div>
+    
+            <div class="table-wrapper">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Nombre</th>
+                            <th>Correo</th>
+                            <th>Rol</th>
+                            <th>Estado</th>
+                            <th>Cambiar rol</th>
+                            <th>Cambiar estado</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for u in usuarios %}
+                        <tr>
+                            <td>{{ u.id }}</td>
+                            <td>{{ u.nombre }}</td>
+                            <td>{{ u.email }}</td>
+                            <td>{{ u.rol }}</td>
+                            <td>{{ u.estado }}</td>
+                            <td>
+                                {% if u.rol != 'ADMIN' %}
+                                <form method="post" action="/admin/usuarios/{{ u.id }}/cambiar-rol" class="admin-form-inline">
+                                    <select name="rol">
+                                        {% for r in roles_disponibles %}
+                                        <option value="{{ r.name }}" {% if r.id == u.rol_id %}selected{% endif %}>
+                                            {{ r.name }}
+                                        </option>
+                                        {% endfor %}
+                                    </select>
+                                    <button type="submit">Guardar</button>
+                                </form>
+                                {% else %}
+                                (ADMIN)
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if u.rol != 'ADMIN' %}
+                                <form method="post" action="/admin/usuarios/{{ u.id }}/cambiar-estado">
+                                    <button type="submit">
+                                        {% if u.estado == 'ACTIVO' %}Desactivar{% else %}Activar{% endif %}
+                                    </button>
+                                </form>
+                                {% else %}
+                                -
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
 
-    <p><a href="/historial">Volver al historial</a></p>
+        <!-- Resumen registros terapeutas -->
+        <div class="section-separator">
+            <div class="titulo">
+                <h2 class="admin-title">Registros de terapeutas</h2>
+            </div>
+            <div class="admin-subtitle">
+                <p>Aquí se muestran los reportes generados por los terapeutas activos del sistema.</p>
+            </div>
+            {% if reportes and reportes|length > 0 %}
+            
+            <div class="table-wrapper">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>ID REPORTE</th>
+                            <th>Nombre (paciente)</th>
+                            <th>Emociones detectadas</th>
+                            <th>Inicio detección</th>
+                            <th>Fin detección</th>
+                            <th>Tiempo procesamiento</th>
+                            <th>Precisión global</th>
+                            <th>Fecha</th>
+                            <th>Hora</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for r in reportes %}
+                        <tr>
+                            <td>{{ r.id_reporte }}</td>
+                            <td>{{ r.paciente }}</td>
+                            <td>{{ r.emociones_detectadas }}</td>
+                            <td>{{ r.inicio_deteccion }}</td>
+                            <td>{{ r.fin_deteccion }}</td>
+                            <td>{{ r.tiempo_procesamiento }}</td>
+                            <td>{{ r.precision_global }}</td>
+                            <td>{{ r.fecha }}</td>
+                            <td>{{ r.hora }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <p class="admin-subtitle">No hay registros de terapeutas aún.</p>
+            {% endif %}
+        </div>
+
+        <!-- Logs auditoría -->
+        <div class="section-separator">
+            <div class="titulo">
+                <h2 class="admin-title">Logs de auditoría de usuarios</h2>
+            </div>
+            <div class="admin-subtitle">
+                <p>Aquí se muestran acciones como inicio/cierre de sesión, accesos, cargas y gestión de usuarios.</p>
+            </div>
+
+            {% if logs and logs|length > 0 %}
+            <div class="table-wrapper">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Fecha y hora</th>
+                            <th>Usuario</th>
+                            <th>Rol</th>
+                            <th>Acción</th>
+                            <th>Resultado</th>
+                            <th>IP</th>
+                            <th>Duración (ms)</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for log in logs %}
+                        <tr>
+                            <td>{{ log.id }}</td>
+                            <td>{{ log.fecha_hora }}</td>
+                            <td>{{ log.usuario }}</td>
+                            <td>{{ log.rol }}</td>
+                            <td>{{ log.accion_legible }}</td>
+                            <td>{{ log.codigo_estado_legible }}</td>
+                            <td>{{ log.ip }}</td>
+                            <td>{{ log.dur_ms }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <p class="admin-subtitle">No hay eventos registrados en la bitácora todavía.</p>
+            {% endif %}
+        </div>
+
+    </div>
+</main>
+
+<footer>
+    <span>DetectEmotion</span>
+    <span></span>
+</footer>
 </body>
+
 </html>

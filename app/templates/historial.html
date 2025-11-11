@@ -11,9 +11,25 @@
     <header>
         <div class="logo">DetectEmotion</div>
         <nav>
-            <span class="user-email">{{ email }}</span>
+            <span id="user-email">
+                {{ request.cookies.get('nombre') or request.cookies.get('email') or '' }}
+            </span>
+
+            {% set rol = request.cookies.get('rol') %}
+
+            {% if rol == 'ADMIN' %}
+            <a href="/admin/usuarios">Administrar</a>
             <a href="/">Inicio</a>
             <a href="/historial">Historial</a>
+            {% elif rol == 'TERAPEUTA' %}
+            <a href="/">Inicio</a>
+            <a href="/historial">Historial</a>
+            {% elif rol == 'TERCERO' %}
+            <a href="/backup">Backup</a>
+            {% else %}
+            <!-- sin rol válido solo mostrar login/logout si aplica -->
+            {% endif %}
+
             <a href="/login">Cerrar Sesión</a>
         </nav>
     </header>
@@ -42,41 +58,43 @@
                 <input type="date" name="fecha" value="{{ request.query_params.get('fecha', '') }}">
                 <button type="submit" class="submit-btn btn-ver-modal">Filtrar</button>
             </form>
+            <div class="table-wrapper">
+                <table class="tabla-historial">
+                    <thead>
+                        <tr>
+                            <th>N°</th>
+                            <th>Nombre</th>
+                            <th>Edad</th>
+                            <th>Fecha y hora</th>
+                            <th>Archivo</th>
+                            <th>Detalles</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for item in historial %}
+                        <tr>
+                            <td>{{ loop.index }}</td>
+                            <td>{{ item.nombre }}</td>
+                            <td>{{ item.edad }}</td>
+                            <td>{{ item.fecha }} {{ item.hora }}</td>
+                            <td>
+                                {% if item.tipo == 'video' %}
+                                <a href="{{ item.archivo }}" target="_blank">ver video</a>
+                                {% elif item.tipo == 'imagen' %}
+                                <a href="{{ item.archivo }}" target="_blank">ver imagen</a>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <button class="submit-btn btn-ver-modal" data-info='{{ item | tojson | safe }}'>
+                                    Ver
+                                </button>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
 
-            <table class="tabla-historial">
-                <thead>
-                    <tr>
-                        <th>N°</th>
-                        <th>Nombre</th>
-                        <th>Edad</th>
-                        <th>Fecha y hora</th>
-                        <th>Archivo</th>
-                        <th>Detalles</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for item in historial %}
-                    <tr>
-                        <td>{{ loop.index }}</td>
-                        <td>{{ item.nombre }}</td>
-                        <td>{{ item.edad }}</td>
-                        <td>{{ item.fecha }} {{ item.hora }}</td>
-                        <td>
-                            {% if item.tipo == 'video' %}
-                            <a href="{{ item.archivo }}" target="_blank">ver video</a>
-                            {% elif item.tipo == 'imagen' %}
-                            <a href="{{ item.archivo }}" target="_blank">ver imagen</a>
-                            {% endif %}
-                        </td>
-                        <td>
-                            <button class="submit-btn btn-ver-modal" data-info='{{ item | tojson | safe }}'>
-                                Ver
-                            </button>
-                        </td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
             {% if not historial %}
 
             <p class="no-result">Sin resultados</p>
@@ -86,9 +104,9 @@
             <div id="modalResultado" class="modal" style="display:none;">
                 <div class="modal-content">
                     <span class="close-btn" onclick="cerrarModal()">&times;</span>
-                    <h2 >Resultado de la detección</h2>
-                    <p><strong >Nombre:</strong> <span id="modalNombre"></span> |
-                        <strong >Edad:</strong> <span id="modalEdad"></span>
+                    <h2>Resultado de la detección</h2>
+                    <p><strong>Nombre:</strong> <span id="modalNombre"></span> |
+                        <strong>Edad:</strong> <span id="modalEdad"></span>
                     </p>
                     <p><strong>Precision:</strong> <span id="precisionGlobal"></span> |
                         <strong>Tiempo proc.</strong> <span id="tiempoProcesamiento"></span>
@@ -124,7 +142,8 @@
                     <div class="items-text" id="imagenExtra" style="display:none;">
                         <p><strong>Emoción detectada:</strong> <span id="imgEmocion"></span></p>
                         <p><strong>Precision:</strong> <span id="imgConfianza"></span> |
-                        <strong>Tiempo proc.:</strong> <span id="imgTiempo"></span> s</p>
+                            <strong>Tiempo proc.:</strong> <span id="imgTiempo"></span> s
+                        </p>
                     </div>
 
                     <button onclick="cerrarModal()" class="submit-btn">Cerrar</button>
@@ -174,7 +193,7 @@
                 videoSource.src = data.archivo;
                 videoTag.load();
 
-                // ✅ Mostrar precisión global y tiempo procesamiento
+                //  Mostrar precisión global y tiempo procesamiento
                 const precision = data.confianza != null ? Number(data.confianza).toFixed(2) + "%" : "-";
                 document.getElementById("precisionGlobal").innerText = precision;
 
@@ -222,4 +241,5 @@
 
     </script>
 </body>
+
 </html>

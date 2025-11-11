@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Backup - DetectEmotion</title>
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+
+<body>
+    <header>
+        <div class="logo">DetectEmotion</div>
+        <nav>
+            <span id="user-email">
+                {{ request.cookies.get('nombre') or request.cookies.get('email') or '' }}
+            </span>
+            <a href="/backup">Backup</a>
+            <a href="/login">Cerrar Sesión</a>
+        </nav>
+    </header>
+
+    <main>
+        <div class="titulo">
+            <h2>Respaldo de Base de Datos</h2>
+        </div>
+
+        <div class="container" style="max-width: 900px; margin: 0 auto;">
+            <p>
+                Como usuario con rol <strong>TERCERO</strong>, puedes generar un respaldo completo
+                de la base de datos del sistema.
+            </p>
+            <p>
+                <strong>Importante:</strong> este archivo <u>no se almacena en AWS</u>.
+                Debes guardarlo en un medio externo seguro (disco institucional, Google Drive,
+                dispositivo USB, etc.).
+            </p>
+
+            <form method="get" action="/backup/generar">
+                <button type="submit" class="submit">
+                    Generar respaldo de la base de datos
+                </button>
+            </form>
+
+            {% if ultimo_backup %}
+            <div class="mensaje-detectando" style="margin-top: 25px;">
+                Última acción registrada:
+                {{ ultimo_backup }}
+            </div>
+            {% endif %}
+        </div>
+    </main>
+
+    <footer>
+        <span>DetectEmotion</span>
+        <span></span>
+    </footer>
+</body>
+
+</html>

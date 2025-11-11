@@ -19,11 +19,9 @@ async def login_get(request: Request):
 @router.post("/login", response_class=HTMLResponse)
 async def login_post(request: Request, usuario: str = Form(...), password: str = Form(...)):
     try:
-        # Conexión usando get_db() para mantener consistencia
         conn = get_db()
         cursor = conn.cursor(dictionary=True)
 
-        # Buscar usuario por email
         cursor.execute("""
             SELECT u.id, u.nombre, u.email, u.password, u.estado, r.name AS rol
             FROM usuarios u
@@ -34,37 +32,39 @@ async def login_post(request: Request, usuario: str = Form(...), password: str =
         cursor.close()
         conn.close()
 
-        # Validar existencia
         if not user:
             return templates.TemplateResponse(
                 "login.html",
                 {"request": request, "error": "Credenciales inválidas."}
             )
 
-        # Truncar password largo (por compatibilidad bcrypt)
         if len(password) > 72:
             password = password[:72]
 
-        # Validar contraseña
         if not pwd_context.verify(password, user["password"]):
             return templates.TemplateResponse(
                 "login.html",
                 {"request": request, "error": "Credenciales inválidas."}
             )
 
-        # Validar estado
         if user["estado"] != "ACTIVO":
             return templates.TemplateResponse(
                 "login.html",
                 {"request": request, "error": "Usuario inactivo. Contacta al administrador."}
             )
+        rol = user["rol"] or ""
+        if rol == "ADMIN":
+            destino = "/admin/usuarios"
+        elif rol == "TERCERO":
+            destino = "/backup"
+        else:
+            destino = "/"
 
-        # 🚀 Login OK: setear cookies necesarias
         response = RedirectResponse(url="/", status_code=303)
         response.set_cookie("usuario_id", str(user["id"]), httponly=True)
         response.set_cookie("email", user["email"], httponly=True)
         response.set_cookie("nombre", user["nombre"] or "", httponly=True)
-        response.set_cookie("rol", user["rol"] or "", httponly=True)
+        response.set_cookie("rol", rol, httponly=True)
 
         return response
 
@@ -76,4 +76,7 @@ async def login_post(request: Request, usuario: str = Form(...), password: str =
 async def logout(request: Request):
     response = RedirectResponse(url="/login", status_code=302)
     response.delete_cookie("usuario_id")
+    response.delete_cookie("email")
+    response.delete_cookie("nombre")
+    response.delete_cookie("rol")
     return response

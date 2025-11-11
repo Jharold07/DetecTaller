@@ -61,7 +61,7 @@ strong {color: var(--azul-principal);}
     }
 }
 
-.titulo h2 {
+.titulo h2, h1{
     text-align: center;
     margin-bottom: 20px;
     color: var(--azul-principal);
@@ -264,10 +264,6 @@ footer {
 }
 
 
-
-
-
-
 /* HISTORIAL____________________ */
 /* FILTRO */
 .filtro-form {
@@ -371,4 +367,117 @@ tbody tr:hover {
 @keyframes palpitar {
     0%, 100% { transform: scale(1); opacity: 1; }
     50% { transform: scale(1.05); opacity: 0.6; }
+}
+
+/* Contenedor general (igual que historial) */
+.container {
+    width: 100%;
+    max-width: 1200px;         /* controla el ancho máximo */
+    margin: 0 auto 40px;       /* centrado + espacio abajo */
+    padding: 0 1rem;           /* pequeño padding lateral */
+}
+
+/* Títulos dentro de administrar */
+.admin-title {
+    margin: 20px 0 10px;
+    color: var(--azul-principal);
+    font-size: 1.4rem;
+    font-weight: 600;
+}
+
+/* Subtítulos / descripciones pequeñas */
+.admin-subtitle {
+    margin: 0 0 10px;
+    color: #64748b;
+    font-size: 0.9rem;
+}
+
+/* Formularios en administrar */
+.admin-form-inline {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin: 15px 0 25px;
+    align-items: center;
+}
+
+.admin-form-inline input,
+.admin-form-inline select {
+    padding: 8px 10px;
+    border-radius: 6px;
+    border: 1px solid #cbd5e1;
+    min-width: 160px;
+}
+
+.admin-form-inline button {
+    padding: 8px 18px;
+    border: none;
+    border-radius: 6px;
+    background-color: var(--azul-principal);
+    color: var(--blanco);
+    cursor: pointer;
+    font-weight: 600;
+}
+
+.admin-form-inline button:hover {
+    background-color: #134ba5;
+}
+
+/* Wrapper con scroll para tablas grandes */
+.table-wrapper {
+    margin-top: 10px;
+    max-height: 500px;         /* ajusta según lo que quieras mostrar */
+    overflow-y: auto;          /* scroll vertical */
+    border-radius: 12px;
+    box-shadow: 0 10px 15px rgba(0,0,0,0.05);
+}
+
+/* Opcional: mismas tablas pero dentro del wrapper sin doble sombra */
+.table-wrapper table {
+    box-shadow: none;
+    border-radius: 0;
+}
+
+/* Etiquetas de sección para separar bloques */
+.section-separator {
+    margin: 35px 0 10px;
+    border-top: 1px solid #e2e8f0;
+    padding-top: 15px;
+}
+
+/* Mantiene el ancho de la tabla dentro del contenedor */
+.table-wrapper table {
+    width: 100%;
+    border-collapse: collapse;
+    background-color: #fff;
+}
+
+/* === CABECERA FIJA === */
+.table-wrapper thead th {
+    position: sticky;
+    top: 0;
+    background-color: var(--blanco); /* fondo igual que tabla */
+    color: var(--azul-principal);
+    z-index: 2;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+}
+
+/* Opcional: bordes suaves */
+.table-wrapper th,
+.table-wrapper td {
+    padding: 12px;
+    border-bottom: 1px solid #e2e8f0;
+    text-align: center;
+}
+
+/* Scroll visualmente más elegante */
+.table-wrapper::-webkit-scrollbar {
+    width: 8px;
+}
+.table-wrapper::-webkit-scrollbar-thumb {
+    background-color: #cbd5e1;
+    border-radius: 8px;
+}
+.table-wrapper::-webkit-scrollbar-thumb:hover {
+    background-color: #94a3b8;
 }

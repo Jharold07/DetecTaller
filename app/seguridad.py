@@ -2,6 +2,7 @@
 import os
 import mysql.connector
 from fastapi import Request, HTTPException, status
+from typing import List, Optional
 
 def get_db():
     return mysql.connector.connect(

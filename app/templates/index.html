@@ -11,10 +11,25 @@
     <header>
         <div class="logo">DetectEmotion</div>
         <nav>
-            <span class="user-email">{{ nombre_usuario }}</span>
-            <a href="/admin/usuarios">Asignar</a>
+            <span id="user-email">
+                {{ request.cookies.get('nombre') or request.cookies.get('email') or '' }}
+            </span>
+
+            {% set rol = request.cookies.get('rol') %}
+
+            {% if rol == 'ADMIN' %}
+            <a href="/admin/usuarios">Administrar</a>
             <a href="/">Inicio</a>
             <a href="/historial">Historial</a>
+            {% elif rol == 'TERAPEUTA' %}
+            <a href="/">Inicio</a>
+            <a href="/historial">Historial</a>
+            {% elif rol == 'TERCERO' %}
+            <a href="/backup">Backup</a>
+            {% else %}
+            <!-- sin rol válido solo mostrar login/logout si aplica -->
+            {% endif %}
+
             <a href="/login">Cerrar Sesión</a>
         </nav>
     </header>
