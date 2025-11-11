@@ -5,6 +5,7 @@ from passlib.context import CryptContext
 import mysql.connector
 import os
 from dotenv import load_dotenv
+from app.seguridad import get_db
 
 load_dotenv()
 templates = Jinja2Templates(directory="app/templates")
@@ -18,72 +19,58 @@ async def login_get(request: Request):
 @router.post("/login", response_class=HTMLResponse)
 async def login_post(request: Request, usuario: str = Form(...), password: str = Form(...)):
     try:
-        conn = mysql.connector.connect(
-            host=os.getenv("MYSQL_HOST"),
-            port=os.getenv("MYSQL_PORT"),
-            user=os.getenv("MYSQL_USER"),
-            password=os.getenv("MYSQL_PASSWORD"),
-            database=os.getenv("MYSQL_DATABASE")
-        )
-        cursor = conn.cursor()
-        cursor.execute("SELECT id, password FROM usuarios WHERE email = %s", (usuario,))
+        # Conexión usando get_db() para mantener consistencia
+        conn = get_db()
+        cursor = conn.cursor(dictionary=True)
+
+        # Buscar usuario por email
+        cursor.execute("""
+            SELECT u.id, u.nombre, u.email, u.password, u.estado, r.name AS rol
+            FROM usuarios u
+            LEFT JOIN roles r ON r.id = u.rol_id
+            WHERE u.email = %s
+        """, (usuario,))
         user = cursor.fetchone()
+        cursor.close()
         conn.close()
 
-        if user:
-            if len(password) > 72:
-                    password = password[:72]
+        # Validar existencia
+        if not user:
+            return templates.TemplateResponse(
+                "login.html",
+                {"request": request, "error": "Credenciales inválidas."}
+            )
 
-            if pwd_context.verify(password, user[1]):
-                    response = RedirectResponse(url="/", status_code=302)
-                    response.set_cookie("usuario_id", str(user[0]))
-                    return response
+        # Truncar password largo (por compatibilidad bcrypt)
+        if len(password) > 72:
+            password = password[:72]
 
-        return templates.TemplateResponse("login.html", {"request": request, "error": "Credenciales inválidas."})
+        # Validar contraseña
+        if not pwd_context.verify(password, user["password"]):
+            return templates.TemplateResponse(
+                "login.html",
+                {"request": request, "error": "Credenciales inválidas."}
+            )
+
+        # Validar estado
+        if user["estado"] != "ACTIVO":
+            return templates.TemplateResponse(
+                "login.html",
+                {"request": request, "error": "Usuario inactivo. Contacta al administrador."}
+            )
+
+        # 🚀 Login OK: setear cookies necesarias
+        response = RedirectResponse(url="/", status_code=303)
+        response.set_cookie("usuario_id", str(user["id"]), httponly=True)
+        response.set_cookie("email", user["email"], httponly=True)
+        response.set_cookie("nombre", user["nombre"] or "", httponly=True)
+        response.set_cookie("rol", user["rol"] or "", httponly=True)
+
+        return response
 
     except Exception as e:
         print(f"ERROR LOGIN: {e}")
         return HTMLResponse(f"<h2>ERROR EN LOGIN: {str(e)}</h2>", status_code=500)
-
-@router.get("/register", response_class=HTMLResponse)
-async def register_get(request: Request):
-    return templates.TemplateResponse("register.html", {"request": request})
-
-@router.post("/register", response_class=HTMLResponse)
-async def register_post(request: Request, email: str = Form(...), password: str = Form(...)):
-    try:
-        if not email or not password:
-            return templates.TemplateResponse("register.html", {"request": request, "error": "Todos los campos son obligatorios."})
-
-        conn = mysql.connector.connect(
-            host=os.getenv("MYSQL_HOST"),
-            port=os.getenv("MYSQL_PORT"),
-            user=os.getenv("MYSQL_USER"),
-            password=os.getenv("MYSQL_PASSWORD"),
-            database=os.getenv("MYSQL_DATABASE")
-        )
-        cursor = conn.cursor()
-
-        cursor.execute("SELECT id FROM usuarios WHERE email = %s", (email,))
-        if cursor.fetchone():
-            conn.close()
-            return templates.TemplateResponse("register.html", {"request": request, "error": "El correo ya está registrado."})
-
-        if len(password) > 72:
-            password = password[:72]
-
-        hash_pass = pwd_context.hash(password)
-
-        cursor.execute("INSERT INTO usuarios (email, password) VALUES (%s, %s)", (email, hash_pass))
-        conn.commit()
-        conn.close()
-
-        return RedirectResponse(url="/login?mensaje=Cuenta+creada+correctamente", status_code=302)
-
-    except Exception as e:
-        print(f"🔴 ERROR REGISTER: {e}")
-        return HTMLResponse(f"<h2>ERROR EN REGISTRO: {str(e)}</h2>", status_code=500)
-
 
 @router.get("/logout")
 async def logout(request: Request):

@@ -10,6 +10,7 @@ from app.routes.historial import router as historial_router
 from app.routes.exportar_pdf import router as pdf_router
 from app.routes import procesar_imagen
 from app.routes.procesar_video import procesar_video
+from app.routes.usuarios import router as usuarios_router
 from io import BytesIO
 from PIL import Image
 import numpy as np
@@ -61,10 +62,14 @@ emociones = ['angry', 'disgust', 'fear', 'happy', 'neutral', 'sad', 'surprise']
 async def index(request: Request):
     if not request.cookies.get("usuario_id"):
         return RedirectResponse("/login")
+    nombre=request.cookies.get("nombre")
     email = request.cookies.get("email")
+    mostrar=nombre or email or "Usuario"
+
     return templates.TemplateResponse("index.html", {
         "request": request,
         "email": email,
+        "nombre_usuario": mostrar,
         "emociones_detectadas": None,
         "nombre": "",
         "edad": "",
@@ -196,7 +201,7 @@ async def subir(
                     "video_nombre": ""
                 })
 
-            img_array = np.array(img_pil.resize((224, 224))).astype("float32") / 255.0
+            img_array = np.array(img_pil.resize((224, 224))).astype("float32") / 255
             img_array = img_array.reshape(1, 224, 224, 3)
 
             import time as _time
@@ -264,3 +269,4 @@ app.include_router(guardar_imagen_router)
 app.include_router(historial_router)
 app.include_router(pdf_router)
 app.include_router(procesar_imagen.router)
+app.include_router(usuarios_router)
